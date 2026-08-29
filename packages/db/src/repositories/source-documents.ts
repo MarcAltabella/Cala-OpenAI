@@ -8,3 +8,4 @@ export function insertSourceDocument(input: Pick<SourceDocument, 'provider' | 'p
   documents.set(key, document); return document;
 }
 export function resetSourceDocuments(): void { documents.clear(); }
+export function listSourceDocuments(companyId?: string): SourceDocument[] { return [...documents.values()].filter(document => !companyId || document.companyId === companyId); }
