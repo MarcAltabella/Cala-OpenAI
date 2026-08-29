@@ -1,12 +1,12 @@
-# Healthcare Market Intelligence Implementation Plan
+# Healthcare World Knowledge Graph Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a local-first dashboard that monitors an unlimited company watchlist, seeds ten biotech/healthcare companies, analyzes material healthcare developments, and produces cross-company market-impact reports.
+**Goal:** Build a local-first dashboard whose center is a healthcare-world knowledge graph. `POST /runs` fans out Cala healthcare intel and an OpenAI research agent in parallel, persists PostgreSQL then Neo4j, gates with Fastino Healthcare on Hugging Face, and only then calls Cala finance plus Fastino Finance for structured impact. Seed twenty companies with Moderna first. Demo: Moderna mRNA melanoma vaccine momentum.
 
-**Architecture:** Express serves a React/Vite dashboard and starts durable LangGraph runs. PostgreSQL with pgvector is the source of truth for operational data and retrieval, accessed through Drizzle ORM and its typed PostgreSQL schema; Neo4j is rebuilt from approved PostgreSQL entities and relationships for graph exploration. LangChain/LangGraph is the sole agent framework.
+**Architecture:** Express queues runs. LangGraph owns parallelism and the healthcare gate. PostgreSQL with pgvector is the source of truth, accessed through Drizzle ORM; Neo4j is projected after Postgres writes. Fastino models are Hugging Face Inference clients, not local weights.
 
-**Tech Stack:** TypeScript, pnpm workspaces, React, Vite, Tailwind CSS, Express, React Flow (`@xyflow/react`), PostgreSQL 16 + pgvector, Drizzle ORM, Neo4j, LangChain/LangGraph, Fastino Healthcare and Finance models, Cala Finance API, Docker Compose.
+**Tech Stack:** TypeScript, pnpm workspaces, React, Vite, Tailwind CSS, Express, React Flow (`@xyflow/react`), PostgreSQL 16 + pgvector, Drizzle ORM, Neo4j, LangChain/LangGraph, OpenAI (chat, tools, embeddings), Fastino Healthcare and Finance via Hugging Face Inference, Cala healthcare and finance APIs, Docker Compose.
 
 **Spec:** `planning.md`
 
@@ -16,13 +16,20 @@
 - Follow `.agents/skills/software/git/pr-description/SKILL.md`: conventional imperative lowercase commit/PR titles and `## What` / `## Why` bodies.
 - Follow `.agents/skills/software/systems-design/flowcharts/SKILL.md`: use Mermaid `flowchart` syntax for every workflow diagram added to documentation.
 - PostgreSQL is the source of truth; Neo4j is a rebuildable derived graph and is never written by HTTP routes.
-- Support an unlimited company watchlist. Seed ten companies for the demo and pin Moderna first in the UI.
-- Store the prior 12 months of source material on seed; daily runs retrieve deltas only.
-- Run Fastino Finance only when Fastino Healthcare returns `relevanceScore >= 0.70`.
-- Use live APIs: ClinicalTrials.gov, PubMed/PMC, FDA, DailyMed, SEC EDGAR, company IR/news feeds, and Cala.
+- Support an unlimited company watchlist. Seed **twenty** healthcare companies for the demo and pin Moderna first in the UI.
+- Graph nodes are first-class: Company, Person, Institution, Paper, Patent, ClinicalTrial, NewsItem. Do not model papers, patents, or people only as fields on a company row.
+- People and institutions come from structured source fields and extraction, not LinkedIn or campus crawls.
+- Store the prior 12 months of source material on seed (extend lookback for patents/papers needed for the Moderna narrative); daily runs retrieve deltas only.
+- Run Fastino Finance and Cala **finance** only when Fastino Healthcare returns `isNew && isRelevant`.
+- Call Fastino Healthcare and Finance through Hugging Face Inference ([Healthcare](https://huggingface.co/fastino/Fastino-Nemotron-3.5-Lightning-Healthcare), [Finance](https://huggingface.co/fastino/Fastino-Nemotron-3.5-Lightning-Finance)); do not serve those weights in Compose.
+- Use OpenAI for the research agent (tool calling), relation extract, JSON repair, and embeddings.
+- Cala healthcare snapshot runs **in parallel** with the research agent on every run; it is not gated.
+- Research tools wrap source adapters and may change; keep one adapter per PR.
+- Use live APIs: ClinicalTrials.gov, PubMed/PMC, PatentsView (or equivalent USPTO API), FDA, DailyMed, SEC EDGAR, company IR/news, healthcare news feeds, Cala, OpenAI, and Hugging Face.
 - Keep the MVP local: Docker Compose, no auth, Redis, Supabase, managed database, or cloud scheduler.
 - Use Tailwind CSS and native React/HTML components for all dashboard UI; do not add a component, chart, or dashboard library in MVP.
 - Use React Flow (`@xyflow/react`) for the interactive knowledge-graph UI.
+- No HTTP route accepts Cypher.
 
 ---
 
@@ -31,24 +38,26 @@
 | Stream | Owner | Starts after | Deliverable |
 | --- | --- | --- | --- |
 | Foundation | Any one developer | immediately | Workspace, containers, contracts, migrations |
-| A — data/API | Developer 1 | Foundation | Postgres repositories and Express APIs |
-| B — ingestion/agents/graph | Developer 2 | Foundation contracts | Source adapters, LangGraph, Neo4j projection |
-| C — dashboard | Developer 3 | Foundation contracts | Companies, detail, graph, and reports UI |
-| Integration | All | A, B, C | Seeded end-to-end demo flow |
+| A — data/API | Developer 1 | Foundation | Run queue, snapshot/gate/finance persistence, directory APIs |
+| B — ingestion/agents/graph | Developer 2 | Foundation contracts | Adapters-as-tools, LangGraph fan-out, Fastino clients, Neo4j projection |
+| C — dashboard | Developer 3 | Foundation contracts | Graph explorer, entity pages, momentum reports UI |
+| Integration | All | A, B, C | Seeded Moderna momentum demo |
 
 ```mermaid
 flowchart TD
-  A[Source APIs and feeds] --> B[Normalize and deduplicate]
-  B --> C[(PostgreSQL)]
-  C --> D[Healthcare analysis]
-  D --> E{relevanceScore >= 0.70?}
-  E -- No --> H[Finish development]
-  E -- Yes --> F[Cala market history]
-  F --> G[Finance analysis]
-  G --> C
-  C --> I[Project curated graph]
-  I --> J[(Neo4j)]
-  C --> K[Cross-company report]
+  R[POST /runs] --> P[Fan-out]
+  P --> C[Cala healthcare]
+  P --> A[OpenAI research agent]
+  A --> PG[(PostgreSQL)]
+  PG --> NJ[(Neo4j)]
+  C --> J[Join]
+  NJ --> J
+  J --> Rel[OpenAI relations]
+  Rel --> FH[Fastino Healthcare HF]
+  FH --> G{isNew and isRelevant}
+  G -- No --> S[Stop]
+  G -- Yes --> CF[Cala finance]
+  CF --> FF[Fastino Finance HF]
 ```
 
 ## Shared file structure
@@ -62,7 +71,7 @@ packages/
   contracts/src/index.ts
   db/src/{client.ts,schema.ts,repositories/*.ts,seed.ts}
   ingestion/src/{types.ts,normalize.ts,sources/*.ts}
-  agents/src/{models.ts,healthcare.ts,finance.ts,workflow.ts}
+  agents/src/{models.ts,cala.ts,research.ts,relations.ts,healthcare.ts,finance.ts,workflow.ts}
   graph/src/{client.ts,project.ts,queries.ts}
 infra/docker-compose.yml
 ```
@@ -72,7 +81,7 @@ infra/docker-compose.yml
 **Owner:** Foundation
 
 **Files:**
-- Create: `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `.env.example`
+- Create: `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `.env.example` (`OPENAI_API_KEY`, `HF_TOKEN`, `CALA_*`, Fastino model ids)
 - Create: `infra/docker-compose.yml`
 - Create: `apps/api/package.json`, `apps/worker/package.json`, `apps/web/package.json`
 - Create: `packages/contracts/package.json`, `packages/db/package.json`, `packages/ingestion/package.json`, `packages/agents/package.json`, `packages/graph/package.json`
@@ -126,9 +135,13 @@ git commit -m "build: add local development workspace"
 - Test: `packages/db/src/schema.test.ts`
 
 **Interfaces:**
-- Produces `Company`, `SourceDocument`, `Development`, `FinanceAnalysis`, `AgentRun`, `DailyReport`, `GraphEntity`, and `GraphRelationship` types.
-- `Development` includes `id`, `companyId`, `sourceDocumentId`, `summary`, `relevanceScore`, and `status`.
-- `FinanceAnalysis` includes `developmentId`, `marketSnapshot`, `impact`, `confidence`, and `rationale`.
+- Produces `Company`, `Person`, `Institution`, `SourceDocument`, `Entity`, `Relationship`, `CalaHealthcareSnapshot`, `CalaFinanceSnapshot`, `HealthcareGate`, `Development`, `FinanceImpact`, `MomentumReport`, `AgentRun`, `DailyReport` types.
+- `Entity` includes `id`, `type` (`company` | `person` | `institution` | `paper` | `patent` | `clinical_trial` | `news`), `externalId`, `label`, and `properties`.
+- `Relationship` includes `id`, `type`, `fromEntityId`, `toEntityId`, `sourceDocumentId`, `evidenceUrl`, and `confidence`.
+- `HealthcareGate` includes `isNew`, `isRelevant`, `relevanceScore`, `rationale`, `developmentSummary`.
+- `FinanceImpact` includes `developmentSummary`, `potentialProductOrCatalyst`, `expectedImpact`, `rationale`, `evidenceIds`.
+- `AgentRun` includes `id`, `companyId`, `mode`, `status`, `phase` (`queued` | `fanout` | `relations` | `healthcare_gate` | `stopped` | `finance` | `completed` | `failed`), `error`, `counts`.
+- `MomentumReport` includes `companyId`, `thesis`, `events` (ordered precursor list with entity ids), `generatedAt`.
 
 - [ ] **Step 1: Write the failing schema test**
 
@@ -136,6 +149,11 @@ git commit -m "build: add local development workspace"
 it('enforces one source document per provider identifier', async () => {
   await insertSourceDocument({ provider: 'pubmed', providerId: '123', contentHash: 'a' });
   await expect(insertSourceDocument({ provider: 'pubmed', providerId: '123', contentHash: 'b' })).rejects.toThrow();
+});
+
+it('rejects duplicate entity external ids of the same type', async () => {
+  await insertEntity({ type: 'patent', externalId: 'US-1' });
+  await expect(insertEntity({ type: 'patent', externalId: 'US-1' })).rejects.toThrow();
 });
 ```
 
@@ -147,35 +165,44 @@ Expected: fail because the schema and repository do not exist.
 
 - [ ] **Step 3: Add the Drizzle schema, generated migrations, and typed contracts**
 
-Define the tables named in `planning.md` with Drizzle's typed PostgreSQL schema, enable `vector` through a generated migration, and enforce `UNIQUE(provider, provider_id)`. Use Drizzle's migration runner and insert API in `client.ts` and `seed.ts`. Seed ten companies; give Moderna `displayOrder: 0` and all others increasing orders. Do not hand-author runtime SQL queries or duplicate the schema in a SQL statement array.
+Define the tables named in `planning.md` with Drizzle's typed PostgreSQL schema, enable `vector` through a generated migration, and enforce `UNIQUE(provider, provider_id)` on documents and `UNIQUE(type, external_id)` on entities. Use Drizzle's migration runner and insert API in `client.ts` and `seed.ts`. Seed twenty companies; give Moderna `displayOrder: 0` and all others increasing orders. Do not hand-author runtime SQL queries or duplicate the schema in a SQL statement array.
 
 - [ ] **Step 4: Run the test and migration**
 
 Run: `pnpm --filter @cala/db test schema.test.ts && pnpm --filter @cala/db migrate && pnpm --filter @cala/db seed`
 
-Expected: pass; ten companies exist and duplicate provider identifiers are rejected.
+Expected: pass; twenty companies exist; duplicate provider identifiers and entity external ids are rejected.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add packages/contracts packages/db
-git commit -m "feat(data): define intelligence records"
+git commit -m "feat(data): define healthcare graph records"
 ```
 
-## Task 3: Implement company and run APIs
+## Task 3: Implement directory, run queue, and analysis persistence
 
 **Owner:** Developer 1
 
+Developer 1 does **not** call Cala, OpenAI, or Fastino. Developer 1 owns HTTP contracts and PostgreSQL writes/reads the worker needs.
+
 **Files:**
-- Create: `apps/api/src/app.ts`, `apps/api/src/index.ts`, `apps/api/src/routes/companies.ts`, `apps/api/src/routes/runs.ts`
-- Create: `packages/db/src/repositories/companies.ts`, `packages/db/src/repositories/runs.ts`
-- Test: `apps/api/src/routes/companies.test.ts`, `apps/api/src/routes/runs.test.ts`
+- Create: `apps/api/src/app.ts`, `apps/api/src/index.ts`
+- Create: `apps/api/src/routes/{companies,people,institutions,runs,reports}.ts`
+- Create: `packages/db/src/repositories/{companies,people,institutions,runs,reports,entities,snapshots,gates}.ts`
+- Test: `apps/api/src/routes/{companies,runs,reports}.test.ts`
 
 **Interfaces:**
 - `GET /companies` returns `Company[]` ordered by `displayOrder` then name.
 - `POST /companies` accepts `{ name: string, ticker: string | null }` and creates any additional watchlist company.
-- `POST /runs` accepts `{ companyId?: string, mode: 'seed' | 'delta' }` and returns `{ id, status: 'queued' }`.
-- `GET /runs/:id` returns `{ id, status, startedAt, finishedAt, error, counts }`.
+- `GET /companies/:id/timeline` returns mixed events (papers, patents, trials, news, filings) ordered by date.
+- `GET /companies/:id/people` returns `Person[]` linked by `WORKS_AT` / extraction edges.
+- `GET /people/:id` and `GET /institutions/:id` return the entity plus neighborhood summary.
+- `POST /runs` accepts `{ companyId: string, mode: 'seed' | 'delta' }` and returns `{ id, status: 'queued' }` with HTTP 202.
+- `GET /runs/:id` returns `{ id, status, phase, startedAt, finishedAt, error, counts }` where `counts` includes cala healthcare, documents, gate, and finance.
+- Repositories the worker calls: insert/update `source_documents`, `entities`, `relationships`, `cala_healthcare_snapshots`, `cala_finance_snapshots`, `healthcare_gates`, `finance_analyses`.
+- `GET /reports/momentum/:companyId` returns the latest `MomentumReport` or 404.
+- `GET /companies/:id/developments` returns the latest `HealthcareGate` / development for that company.
 
 - [ ] **Step 1: Write failing endpoint tests**
 
@@ -205,31 +232,39 @@ Expected: pass.
 
 - [ ] **Step 5: Commit**
 
+Split if the diff exceeds PR-SCA: companies+runs first, then people/institutions/timeline, then momentum report read.
+
 ```bash
 git add apps/api packages/db/src/repositories
-git commit -m "feat(api): add companies and run endpoints"
+git commit -m "feat(api): add directory timeline and run endpoints"
 ```
 
-## Task 4: Build source normalization and delta ingestion adapters
+## Task 4: Build source adapters that the research agent calls as tools
 
 **Owner:** Developer 2
 
+Adapters are the **tools** behind the OpenAI research agent. Tool names may change later; each adapter remains its own PR.
+
 **Files:**
 - Create: `packages/ingestion/src/types.ts`, `packages/ingestion/src/normalize.ts`
-- Create: `packages/ingestion/src/sources/{clinical-trials,pubmed,fda,dailymed,sec,investor-relations}.ts`
+- Create: `packages/ingestion/src/sources/{clinical-trials,pubmed,patents,fda,dailymed,sec,news}.ts`
+- Create: `packages/agents/src/tools.ts` (thin LangChain tool wrappers; add as adapters land)
 - Test: `packages/ingestion/src/normalize.test.ts`, one `*.test.ts` per source adapter
 
 **Interfaces:**
 
 ```ts
 export type NormalizedDocument = {
-  provider: string; providerId: string; companyId: string; url: string;
+  provider: string; providerId: string; companyId: string | null; url: string;
   publishedAt: Date; title: string; text: string; rawPayload: unknown; contentHash: string;
+  documentKind: 'paper' | 'patent' | 'trial' | 'news' | 'filing' | 'label' | 'press';
 };
 export interface SourceAdapter {
   fetch(company: Company, since: Date): Promise<NormalizedDocument[]>;
 }
 ```
+
+Company-scoped fetch is the default. PubMed, patents, and news adapters may also return documents whose primary subject is a person or institution; `companyId` may be null until linking.
 
 - [ ] **Step 1: Write the shared deduplication test**
 
@@ -247,7 +282,7 @@ Expected: fail because `contentHash` is not defined.
 
 - [ ] **Step 3: Implement the normalizer and adapters**
 
-Every adapter must use a provider ID when available, set an explicit request timeout, return normalized documents, and throw a provider-scoped error that the workflow can record without aborting other providers.
+Every adapter must use a provider ID when available (PMID, NCT id, patent number, accession number), set an explicit request timeout, return normalized documents, and throw a provider-scoped error that the workflow can record without aborting other providers.
 
 - [ ] **Step 4: Verify each adapter with captured API fixtures**
 
@@ -258,64 +293,94 @@ Expected: pass without live provider keys.
 - [ ] **Step 5: Commit one adapter per PR**
 
 ```bash
-git add packages/ingestion/src/{types.ts,normalize.ts,clinical-trials.ts,clinical-trials.test.ts}
+git add packages/ingestion/src/{types.ts,normalize.ts,sources/clinical-trials.ts,sources/clinical-trials.test.ts}
 git commit -m "feat(ingestion): add clinical trials source"
 ```
 
-Repeat with separate commits/PRs for PubMed, FDA, DailyMed, SEC, and investor-relations; do not combine provider adapters.
+Repeat with separate commits/PRs for PubMed, **patents**, FDA, DailyMed, SEC, and news (IR + healthcare feeds in the news adapter). Do not combine provider adapters.
 
-## Task 5: Implement the LangGraph healthcare-to-finance workflow
+## Task 5: Implement the LangGraph run: fan-out, gate, optional finance
 
 **Owner:** Developer 2
 
 **Files:**
-- Create: `packages/agents/src/models.ts`, `packages/agents/src/healthcare.ts`, `packages/agents/src/finance.ts`, `packages/agents/src/workflow.ts`
+- Create: `packages/agents/src/models.ts`, `packages/agents/src/cala.ts`, `packages/agents/src/research.ts`, `packages/agents/src/relations.ts`, `packages/agents/src/healthcare.ts`, `packages/agents/src/finance.ts`, `packages/agents/src/workflow.ts`
 - Create: `apps/worker/src/index.ts`, `apps/worker/src/scheduler.ts`
-- Test: `packages/agents/src/workflow.test.ts`
+- Test: `packages/agents/src/workflow.test.ts`, `packages/agents/src/healthcare.test.ts`, `packages/agents/src/finance.test.ts`
 
 **Interfaces:**
 
 ```ts
-export type WorkflowState = { runId: string; documentIds: string[]; developmentIds: string[]; financeAnalysisIds: string[]; errors: string[] };
-export const RELEVANCE_THRESHOLD = 0.70;
+export type WorkflowState = {
+  runId: string;
+  companyId: string;
+  calaHealthcareSnapshotId: string | null;
+  documentIds: string[];
+  entityIds: string[];
+  relationshipIds: string[];
+  healthcareGate: HealthcareGate | null;
+  calaFinanceSnapshotId: string | null;
+  financeImpactId: string | null;
+  errors: string[];
+};
 export async function runIntelligenceWorkflow(runId: string): Promise<WorkflowState>;
 ```
 
-- [ ] **Step 1: Write the threshold-routing test**
+Nodes: **fan-out** (Cala healthcare ∥ OpenAI research agent + tools → Postgres → Neo4j project) → **join** → OpenAI relation pack → Fastino Healthcare (HF) → if `isNew && isRelevant` then Cala finance → Fastino Finance (HF) structured `FinanceImpact`; else stop.
+
+OpenAI embeddings run inside the research path via `embed_and_upsert`. Merge on `(type, externalId)` when present; people merge on normalized name plus affiliation when confidence is high.
+
+- [ ] **Step 1: Write failing routing tests**
 
 ```ts
-it('skips Cala and finance below the relevance threshold', async () => {
-  const state = await runWithHealthcareScore(0.69);
-  expect(state.financeAnalysisIds).toHaveLength(0);
-  expect(calaClient.history).not.toHaveBeenCalled();
+it('runs Cala healthcare and research in parallel and does not call Cala finance before the gate', async () => {
+  await runIntelligenceWorkflow(runId);
+  expect(cala.healthcare).toHaveBeenCalled();
+  expect(cala.finance).not.toHaveBeenCalled();
+});
+
+it('stops without Cala finance when Fastino Healthcare returns not new or not relevant', async () => {
+  mockHealthcareGate({ isNew: true, isRelevant: false });
+  const state = await runIntelligenceWorkflow(runId);
+  expect(state.financeImpactId).toBeNull();
+  expect(cala.finance).not.toHaveBeenCalled();
+});
+
+it('calls Cala finance and Fastino Finance when the gate is new and relevant', async () => {
+  mockHealthcareGate({ isNew: true, isRelevant: true });
+  const state = await runIntelligenceWorkflow(runId);
+  expect(cala.finance).toHaveBeenCalled();
+  expect(state.financeImpactId).toBeTruthy();
 });
 ```
 
-- [ ] **Step 2: Run the test to verify failure**
+- [ ] **Step 2: Run the tests to verify failure**
 
-Run: `pnpm --filter @cala/agents test workflow.test.ts`
+Run: `pnpm --filter @cala/agents test`
 
-Expected: fail because no graph or routing node exists.
+Expected: fail because the graph and clients do not exist.
 
 - [ ] **Step 3: Implement nodes and conditional edges**
 
-Use a general model for structured extraction, Fastino Healthcare for `Development`, Cala for multi-year history, Fastino Finance for `FinanceAnalysis`, and a general model for report synthesis. Persist each node result and `agent_runs` status before moving to the next node.
+Use OpenAI for research tools and relation extract. Call Fastino only through Hugging Face Inference clients in `healthcare.ts` and `finance.ts`. Persist each node via Developer 1 repositories and update `agent_runs.phase` before the next node. A failed research tool is recorded and does not abort Cala healthcare.
 
 - [ ] **Step 4: Add the daily scheduler and Run now bridge**
 
-`enqueueRun(runId)` calls `runIntelligenceWorkflow(runId)`. `scheduler.ts` invokes a delta run once daily; the same function is used by the API route.
+`enqueueRun(runId)` calls `runIntelligenceWorkflow(runId)`. `scheduler.ts` enqueues a delta run once daily; the API route uses the same function.
 
 - [ ] **Step 5: Verify the workflow**
 
 Run: `pnpm --filter @cala/agents test && pnpm --filter @cala/worker typecheck`
 
-Expected: pass for low-score skip, qualifying finance call, and one failed provider with remaining providers completing.
+Expected: pass for parallel fan-out, stop-on-gate, and finance path; one failed tool with remaining tools completing.
 
 - [ ] **Step 6: Commit**
 
+Split if needed: Cala+OpenAI clients, then research agent, then Fastino gate + finance.
+
 ```bash
 git add packages/agents apps/worker
-git commit -m "feat(agents): orchestrate healthcare and finance analysis"
+git commit -m "feat(agents): fan out research and gate finance analysis"
 ```
 
 ## Task 6: Project curated relationships to Neo4j and expose graph reads
@@ -330,17 +395,20 @@ git commit -m "feat(agents): orchestrate healthcare and finance analysis"
 **Interfaces:**
 
 ```ts
-export async function projectDevelopment(developmentId: string): Promise<void>;
-export async function companyNeighborhood(companyId: string): Promise<{ nodes: GraphEntity[]; edges: GraphRelationship[] }>;
+export async function projectEntity(entityId: string): Promise<void>;
+export async function projectRelationship(relationshipId: string): Promise<void>;
+export async function neighborhood(input: {
+  companyId?: string; personId?: string; institutionId?: string; types?: string[];
+}): Promise<{ nodes: Entity[]; edges: Relationship[] }>;
 ```
 
 - [ ] **Step 1: Write the idempotent projection test**
 
 ```ts
-it('merges a company and development edge once', async () => {
-  await projectDevelopment(developmentId);
-  await projectDevelopment(developmentId);
-  expect(await relationshipCount('DEVELOPED_BY')).toBe(1);
+it('merges a person-authored-paper edge once', async () => {
+  await projectRelationship(authoredEdgeId);
+  await projectRelationship(authoredEdgeId);
+  expect(await relationshipCount('AUTHORED')).toBe(1);
 });
 ```
 
@@ -352,7 +420,7 @@ Expected: fail because the projection does not exist.
 
 - [ ] **Step 3: Implement read-model projection and graph query**
 
-Use Neo4j `MERGE` with PostgreSQL IDs as stable external IDs. Keep evidence URL, source document ID, and confidence on every relationship. `GET /knowledge-graph?companyId=` returns only serialized nodes and edges; no route accepts Cypher.
+The research agent must project **before** the relation step so Fastino Healthcare sees PostgreSQL and Neo4j. Use Neo4j `MERGE` with PostgreSQL IDs as stable external IDs. Keep evidence URL, source document ID, and confidence on every relationship. `GET /knowledge-graph` returns only serialized nodes and edges; no route accepts Cypher. Developer 1 may own the HTTP route; Developer 2 owns `project.ts` and `queries.ts`.
 
 - [ ] **Step 4: Verify Neo4j behavior**
 
@@ -364,40 +432,52 @@ Expected: pass.
 
 ```bash
 git add packages/graph apps/api/src/routes/knowledge-graph.ts
-git commit -m "feat(graph): project evidence relationships"
+git commit -m "feat(graph): project healthcare world relationships"
 ```
 
-## Task 7: Build the dashboard shell and companies page
+## Task 7: Build the graph explorer shell
 
 **Owner:** Developer 3
 
 **Files:**
 - Create: `apps/web/src/main.tsx`, `apps/web/src/App.tsx`, `apps/web/src/lib/api.ts`
-- Create: `apps/web/src/pages/CompaniesPage.tsx`, `apps/web/src/components/AppNav.tsx`, `apps/web/src/components/RunNowButton.tsx`
-- Test: `apps/web/src/pages/CompaniesPage.test.tsx`
+- Create: `apps/web/src/pages/KnowledgeGraphPage.tsx`, `apps/web/src/components/KnowledgeGraph.tsx`, `apps/web/src/components/AppNav.tsx`, `apps/web/src/components/RunNowButton.tsx`
+- Test: `apps/web/src/pages/KnowledgeGraphPage.test.tsx`
 
 **Interfaces:**
-- `listCompanies(): Promise<Company[]>`
+- `getKnowledgeGraph(filters: { companyId?: string; types?: string[] }): Promise<{ nodes: Entity[]; edges: Relationship[] }>`
 - `startRun(input: { companyId?: string; mode: 'seed' | 'delta' }): Promise<AgentRun>`
 
-- [ ] **Step 1: Write the default-order test**
+The knowledge graph page is the default route (`/`).
+
+```mermaid
+flowchart LR
+  U[Type and company filter] --> A[GET /knowledge-graph]
+  A --> B[Nodes and edges]
+  B --> C[Graph renderer]
+  C --> D[Selected node detail]
+```
+
+- [ ] **Step 1: Write the filter test**
 
 ```tsx
-it('shows Moderna before the remaining seeded companies', async () => {
-  render(<CompaniesPage />);
-  expect((await screen.findAllByRole('link'))[0]).toHaveTextContent('Moderna');
+it('reloads the graph for Moderna and papers', async () => {
+  render(<KnowledgeGraphPage />);
+  await userEvent.selectOptions(screen.getByLabelText('Company'), 'moderna');
+  await userEvent.click(screen.getByLabelText('Papers'));
+  expect(mockGetKnowledgeGraph).toHaveBeenCalledWith({ companyId: 'moderna', types: expect.arrayContaining(['paper']) });
 });
 ```
 
 - [ ] **Step 2: Run the test to verify failure**
 
-Run: `pnpm --filter @cala/web test CompaniesPage.test.tsx`
+Run: `pnpm --filter @cala/web test KnowledgeGraphPage.test.tsx`
 
 Expected: fail because the page does not exist.
 
-- [ ] **Step 3: Implement navigation, company list, and Run now**
+- [ ] **Step 3: Implement navigation, graph renderer, and Run now**
 
-Use Tailwind CSS and native React/HTML components for the navigation, company list, and button. The Run now button starts `{ mode: 'delta' }`, shows its returned run status, and does not add settings/auth pages or a UI component library.
+Use React Flow to render the API response. On selection show node label, type, evidence URL, and confidence. Do not add graph editing or natural-language Q&A. Run now starts `{ mode: 'delta' }` and shows returned run status.
 
 - [ ] **Step 4: Verify UI behavior**
 
@@ -409,42 +489,96 @@ Expected: pass.
 
 ```bash
 git add apps/web
-git commit -m "feat(web): add companies dashboard"
+git commit -m "feat(web): add healthcare knowledge graph explorer"
 ```
 
-## Task 8: Build company detail, agent-run, and report pages
+## Task 8: Build company, person, and institution pages
 
 **Owner:** Developer 3
 
 **Files:**
-- Create: `apps/web/src/pages/CompanyDetailPage.tsx`, `apps/web/src/pages/ReportsPage.tsx`, `apps/web/src/pages/ReportDetailPage.tsx`
-- Create: `apps/web/src/components/{DevelopmentList,AgentRunList,FinanceFindingCard}.tsx`
-- Test: `apps/web/src/pages/CompanyDetailPage.test.tsx`, `apps/web/src/pages/ReportDetailPage.test.tsx`
+- Create: `apps/web/src/pages/{CompaniesPage,CompanyDetailPage,PersonPage,InstitutionPage}.tsx`
+- Create: `apps/web/src/components/{Timeline,PersonList,DevelopmentList,AgentRunList}.tsx`
+- Test: `apps/web/src/pages/CompaniesPage.test.tsx`, `apps/web/src/pages/CompanyDetailPage.test.tsx`
 
 **Interfaces:**
-- `getCompany(id: string): Promise<Company>`
-- `listDevelopments(companyId: string): Promise<Development[]>`
-- `listAgentRuns(companyId: string): Promise<AgentRun[]>`
-- `getReport(id: string): Promise<DailyReport>`
+- `listCompanies(): Promise<Company[]>`
+- `getCompanyTimeline(id: string): Promise<TimelineEvent[]>`
+- `getPerson(id: string): Promise<Person>`
+- `getInstitution(id: string): Promise<Institution>`
 
-- [ ] **Step 1: Write the evidence-link test**
+- [ ] **Step 1: Write the default-order and timeline tests**
 
 ```tsx
-it('links a finance finding to its source development', async () => {
+it('shows Moderna before the remaining seeded companies', async () => {
+  render(<CompaniesPage />);
+  expect((await screen.findAllByRole('link'))[0]).toHaveTextContent('Moderna');
+});
+
+it('lists a patent and a paper on the company timeline', async () => {
   render(<CompanyDetailPage />);
-  expect(await screen.findByRole('link', { name: /source development/i })).toHaveAttribute('href', '/companies/moderna');
+  expect(await screen.findByText(/patent/i)).toBeInTheDocument();
+  expect(await screen.findByRole('link', { name: /pubmed/i })).toBeVisible();
+});
+```
+
+- [ ] **Step 2: Run the tests to verify failure**
+
+Run: `pnpm --filter @cala/web test CompaniesPage.test.tsx`
+
+Expected: fail because the pages do not exist.
+
+- [ ] **Step 3: Implement directory and entity detail views**
+
+Use Tailwind CSS and native React/HTML only. Company detail shows timeline (papers, patents, trials, news), linked people and institutions, developments, finance findings, and agent statuses. Person and institution pages show affiliation and connected papers/patents/trials.
+
+- [ ] **Step 4: Verify routes and tests**
+
+Run: `pnpm --filter @cala/web test && pnpm --filter @cala/web typecheck`
+
+Expected: pass.
+
+- [ ] **Step 5: Commit**
+
+Split company list vs detail vs person/institution if the diff is large.
+
+```bash
+git add apps/web
+git commit -m "feat(web): show company people and research timeline"
+```
+
+## Task 9: Build momentum and daily report pages
+
+**Owner:** Developer 3
+
+**Files:**
+- Create: `apps/web/src/pages/{ReportsPage,MomentumReportPage,ReportDetailPage}.tsx`
+- Create: `apps/web/src/components/FinanceFindingCard.tsx`
+- Test: `apps/web/src/pages/MomentumReportPage.test.tsx`
+
+**Interfaces:**
+- `getMomentumReport(companyId: string): Promise<MomentumReport>`
+- `getReport(id: string): Promise<DailyReport>`
+
+- [ ] **Step 1: Write the precursor-link test**
+
+```tsx
+it('links momentum events to graph entities and evidence', async () => {
+  render(<MomentumReportPage />);
+  expect(await screen.findByRole('link', { name: /source patent/i })).toHaveAttribute('href', expect.stringContaining('/knowledge-graph'));
+  expect(await screen.findByText(/melanoma/i)).toBeInTheDocument();
 });
 ```
 
 - [ ] **Step 2: Run the test to verify failure**
 
-Run: `pnpm --filter @cala/web test CompanyDetailPage.test.tsx`
+Run: `pnpm --filter @cala/web test MomentumReportPage.test.tsx`
 
-Expected: fail because the detail page does not exist.
+Expected: fail because the page does not exist.
 
-- [ ] **Step 3: Implement focused detail and report views**
+- [ ] **Step 3: Implement momentum and daily briefing views**
 
-Company detail must show source documents, developments, finance findings, and agent statuses/errors. Report detail must rank qualifying findings by impact and confidence and link every item to its company and evidence.
+Momentum report must show an ordered precursor trail (patents, papers, collaborations, trials, acquisitions, disclosures) then the public catalyst, each linked to company/person/institution and evidence. Daily report ranks qualifying finance findings by impact and confidence.
 
 - [ ] **Step 4: Verify routes and tests**
 
@@ -456,63 +590,10 @@ Expected: pass.
 
 ```bash
 git add apps/web
-git commit -m "feat(web): show company evidence and reports"
+git commit -m "feat(web): show company momentum reports"
 ```
 
-## Task 9: Build the knowledge graph page
-
-**Owner:** Developer 3
-
-**Files:**
-- Create: `apps/web/src/pages/KnowledgeGraphPage.tsx`, `apps/web/src/components/KnowledgeGraph.tsx`
-- Modify: `apps/web/src/lib/api.ts`
-- Test: `apps/web/src/pages/KnowledgeGraphPage.test.tsx`
-
-**Interfaces:**
-- `getKnowledgeGraph(companyId?: string): Promise<{ nodes: GraphEntity[]; edges: GraphRelationship[] }>`
-
-```mermaid
-flowchart LR
-  U[Company filter] --> A[GET /knowledge-graph]
-  A --> B[Nodes and edges]
-  B --> C[Graph renderer]
-  C --> D[Selected node detail]
-```
-
-- [ ] **Step 1: Write the filter test**
-
-```tsx
-it('reloads the graph for the selected company', async () => {
-  render(<KnowledgeGraphPage />);
-  await userEvent.selectOptions(screen.getByLabelText('Company'), 'moderna');
-  expect(mockGetKnowledgeGraph).toHaveBeenCalledWith('moderna');
-});
-```
-
-- [ ] **Step 2: Run the test to verify failure**
-
-Run: `pnpm --filter @cala/web test KnowledgeGraphPage.test.tsx`
-
-Expected: fail because the graph page does not exist.
-
-- [ ] **Step 3: Implement a small node/edge renderer**
-
-Use React Flow (`@xyflow/react`) to render the API response, expose a company filter, and show node label, evidence URL, and confidence on selection. Do not add graph editing or natural-language Q&A.
-
-- [ ] **Step 4: Verify the graph page**
-
-Run: `pnpm --filter @cala/web test && pnpm --filter @cala/web typecheck`
-
-Expected: pass.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/web
-git commit -m "feat(web): visualize knowledge graph"
-```
-
-## Task 10: Verify the seeded end-to-end demo path
+## Task 10: Verify the seeded Moderna momentum demo
 
 **Owner:** All developers
 
@@ -522,23 +603,32 @@ git commit -m "feat(web): visualize knowledge graph"
 - Test: `scripts/demo-check.test.ts`
 
 **Interfaces:**
-- `demo-check` exits non-zero unless seed data, a qualifying development, Cala history, a finance analysis, a Neo4j relationship, and a daily report all exist.
+- `demo-check` exits non-zero unless twenty companies, graph artifacts, a persisted `HealthcareGate`, and — when `isNew && isRelevant` — a Cala finance snapshot plus `FinanceImpact` exist.
 
 - [ ] **Step 1: Write the failing end-to-end assertion**
 
 ```ts
-expect(summary).toMatchObject({ companies: 10, developments: expect.any(Number), financeAnalyses: expect.any(Number), reports: 1, graphRelationships: expect.any(Number) });
+expect(summary).toMatchObject({
+  companies: 20,
+  papers: expect.any(Number),
+  patents: expect.any(Number),
+  people: expect.any(Number),
+  institutions: expect.any(Number),
+  momentumReports: expect.any(Number),
+  graphRelationships: expect.any(Number),
+});
+expect(modernaMomentum.events.some((e) => e.kind === 'patent' || e.kind === 'paper')).toBe(true);
 ```
 
 - [ ] **Step 2: Run the check to verify failure**
 
 Run: `pnpm demo-check`
 
-Expected: fail until the demo seed and workflow have produced all artifacts.
+Expected: fail until seed and workflow have produced all artifacts.
 
 - [ ] **Step 3: Implement the read-only demo check and runbook**
 
-The README must document `docker compose up`, migrations, seeding, starting API/worker/web, pressing Run now, and the 2-minute Moderna narrative. The script must query stores only; it must not mutate them.
+The README must document `docker compose up`, migrations, seeding, starting API/worker/web, pressing Run now, and the Moderna melanoma mRNA-vaccine narrative: graph neighborhood, timeline of precursors, momentum report, optional finance finding. The script must query stores only; it must not mutate them.
 
 - [ ] **Step 4: Verify the full system**
 
@@ -556,14 +646,14 @@ git commit -m "docs: add local demo runbook"
 ## PR sequence
 
 1. `build: add local development workspace`
-2. `feat(data): define intelligence records`
-3. `feat(api): add companies and run endpoints`
-4. Six independent source-adapter PRs
-5. `feat(agents): orchestrate healthcare and finance analysis`
-6. `feat(graph): project evidence relationships`
-7. `feat(web): add companies dashboard`
-8. `feat(web): show company evidence and reports`
-9. `feat(web): visualize knowledge graph`
+2. `feat(data): define healthcare graph records`
+3. `feat(api): add directory timeline and run endpoints` (split if needed)
+4. Seven independent source-adapter PRs (trials, pubmed, **patents**, fda, dailymed, sec, news)
+5. `feat(agents): fan out research and gate finance analysis` (split clients / research / Fastino if needed)
+6. `feat(graph): project healthcare world relationships`
+7. `feat(web): add healthcare knowledge graph explorer`
+8. `feat(web): show company people and research timeline`
+9. `feat(web): show company momentum reports`
 10. `docs: add local demo runbook`
 
 Each PR description must use:
@@ -580,6 +670,6 @@ Each PR description must use:
 
 ## Self-review
 
-- Scope coverage: all approved source providers, agent routing, PostgreSQL, Neo4j, local infrastructure, unlimited watchlists, three dashboard areas, and the demo report are assigned to tasks.
+- Scope coverage: POST /runs fan-out, Cala healthcare vs finance, OpenAI research tools, Fastino Hugging Face gate, Fastino finance structured output, PostgreSQL, Neo4j, Developer 1 persistence, Developer 2 agents, and the Moderna demo are assigned to tasks.
 - Parallelization: Tasks 3, 4, and 7 can begin as soon as Task 2 lands; Tasks 5, 6, 8, and 9 then progress on their respective streams.
 - No placeholders: every task declares files, interfaces, a focused test, runnable commands, and a commit.
