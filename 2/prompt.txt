@@ -1,0 +1,13 @@
+are we using news in this girthub repository from recent healthcare news or is something missing ot test this implementation of developer 2
+
+---
+
+proceed to run it
+
+---
+
+try again
+
+---
+
+explain me the test you did and what you asked.
