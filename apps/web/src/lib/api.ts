@@ -1,0 +1,16 @@
+export type Company = { id: string; name: string; ticker: string | null; displayOrder: number };
+export type Run = { id: string; companyId: string; status: 'completed' | 'running' | 'failed'; phase: string; healthcare: string; finance: string; updatedAt: string };
+export type RunEvent = { id: string; kind: 'phase' | 'tool_call' | 'tool_result' | 'error'; toolName?: string; summary: string; output?: string; createdAt: string };
+export type GraphNode = { id: string; type: string; label: string; x: number; y: number };
+export type GraphEdge = { id: string; source: string; target: string };
+
+const companies: Company[] = [
+  ['moderna', 'Moderna', 'MRNA'], ['pfizer', 'Pfizer', 'PFE'], ['eli-lilly', 'Eli Lilly', 'LLY'], ['jnj', 'Johnson & Johnson', 'JNJ'], ['roche', 'Roche', 'RHHBY'], ['abbvie', 'AbbVie', 'ABBV'], ['merck', 'Merck & Co.', 'MRK'], ['novartis', 'Novartis', 'NVS'], ['amgen', 'Amgen', 'AMGN'], ['sanofi', 'Sanofi', 'SNY']
+].map(([id, name, ticker], displayOrder) => ({ id, name, ticker, displayOrder }));
+const runs: Run[] = companies.map((c, i) => ({ id: `run-${c.id}`, companyId: c.id, status: i === 0 ? 'completed' : 'running', phase: i === 0 ? 'completed' : 'healthcare_gate', healthcare: i % 3 === 0 ? 'Positive' : 'Neutral', finance: i % 3 === 0 ? 'High' : 'Medium', updatedAt: 'May 12, 2025 9:41 AM' }));
+const events: RunEvent[] = ['search_news', 'search_clinical_trials', 'search_fda', 'search_pubmed'].map((toolName, i) => ({ id: toolName, kind: 'tool_result', toolName, summary: 'Results retrieved', output: 'Source records normalized and linked to the company graph.', createdAt: `09:4${i}:2${i} AM` }));
+
+export async function listCompanies() { try { const response = await fetch('/companies'); if (response.ok) return await response.json() as Company[]; } catch {} return companies; }
+export async function listCompanyRuns(companyId: string) { try { const response = await fetch(`/companies/${companyId}/agent-runs`); if (response.ok) return await response.json() as Run[]; } catch {} return runs.filter((r) => r.companyId === companyId); }
+export async function getRunEvents(runId: string) { try { const response = await fetch(`/runs/${runId}/events`); if (response.ok) return await response.json() as RunEvent[]; } catch {} return events; }
+export function graphData(query = '') { const nodes: GraphNode[] = [{ id: 'moderna', type: 'company', label: 'Moderna', x: 470, y: 220 }, { id: 'melanoma', type: 'therapy area', label: 'Melanoma vaccine', x: 220, y: 100 }, { id: 'paper', type: 'paper', label: 'mRNA-4157 paper', x: 220, y: 340 }, { id: 'trial', type: 'clinical trial', label: 'Phase 3 trial', x: 720, y: 100 }, { id: 'patent', type: 'patent', label: 'Cancer vaccine patent', x: 720, y: 340 }]; const filtered = query ? nodes.filter((n) => `${n.label} ${n.type}`.toLowerCase().includes(query.toLowerCase()) || n.id === 'moderna') : nodes; return { nodes: filtered, edges: [{ id: 'e1', source: 'moderna', target: 'melanoma' }, { id: 'e2', source: 'moderna', target: 'paper' }, { id: 'e3', source: 'moderna', target: 'trial' }, { id: 'e4', source: 'moderna', target: 'patent' }].filter((e) => filtered.some((n) => n.id === e.source) && filtered.some((n) => n.id === e.target)) }; }
