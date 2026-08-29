@@ -1,0 +1,1 @@
+explain me the actual architecture and orchestraction, calls done, etc. briefly
