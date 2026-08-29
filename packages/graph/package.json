@@ -1,0 +1,1 @@
+{"name":"@cala/graph","private":true,"type":"module","scripts":{"typecheck":"tsc --noEmit","test":"vitest run"},"devDependencies":{"vitest":"^2.1.5","typescript":"^5.6.3"}}
