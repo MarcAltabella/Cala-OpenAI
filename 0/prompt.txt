@@ -1,0 +1,3 @@
+okay we are going to do the development of developer 2. ask any question you have regarding the implementation. maybe there is something missing or maybe not. ensure also to apply some test in order to see if works or not. 
+
+if you need credentials for something or some installation don't doubt to install or to ask for. for openai i have api tokens.
