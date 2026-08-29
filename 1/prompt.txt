@@ -1,0 +1,1 @@
+check if the agents have access via langchain to web search in order to extract news

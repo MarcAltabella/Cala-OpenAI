@@ -1,0 +1,55 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M16ZA81N5KBSBJFRX2ETAHQ7",
+  "session_id": "c305d5d5-fe0a-4bf1-b983-d8e9b0f70416",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-29T14:38:25.717616Z",
+  "branch": "mauro/dev2-agents-pipeline",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    ".env.example"
+  ],
+  "agent": "Cursor",
+  "model": "auto-smart",
+  "turn_id": "0fce99ee15cf",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 30548,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 77440,
+    "output_tokens": 872,
+    "api_call_count": 1
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-29T14:38:25.697441Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 231,
+    "human_modified": 18,
+    "human_removed": 0,
+    "total_committed": 241,
+    "total_lines_changed": 276,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 143,
+      "user_lines_removed": 17,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40,
+        ".cursor/plans/developer_2_agents_pipeline_f777de2b.plan.md": 103
+      },
+      "user_removed_per_file": {
+        ".env.example": 17
+      }
+    }
+  ]
+}
