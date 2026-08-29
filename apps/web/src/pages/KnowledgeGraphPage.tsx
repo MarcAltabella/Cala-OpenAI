@@ -23,7 +23,6 @@ import {
   type Company,
   type GraphAskFilter,
   type GraphEntityDetail,
-  type GraphSqlResult,
   type ServiceHealth,
 } from '../lib/api';
 import {
@@ -61,12 +60,6 @@ const entityTypes = Object.keys(ENTITY_STYLES).filter((type) => type !== 'produc
 const relationshipTypes = Object.keys(RELATION_STYLES);
 const ALL_COMPANIES = 'all';
 
-function formatSqlCell(value: unknown) {
-  if (value == null) return '—';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-}
-
 export function KnowledgeGraphPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyId, setCompanyId] = useState('');
@@ -80,7 +73,6 @@ export function KnowledgeGraphPage() {
   const [expanding, setExpanding] = useState(false);
   const [error, setError] = useState('');
   const [sqlBusy, setSqlBusy] = useState(false);
-  const [sqlResult, setSqlResult] = useState<GraphSqlResult | null>(null);
   const [sqlError, setSqlError] = useState('');
   const [labelQuery, setLabelQuery] = useState('');
   const [ready, setReady] = useState(false);
@@ -165,7 +157,6 @@ export function KnowledgeGraphPage() {
     const close = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setSelectedId(null);
-        setSqlResult(null);
         setSqlError('');
       }
     };
@@ -238,11 +229,9 @@ export function KnowledgeGraphPage() {
     setSqlError('');
     try {
       const result = await askGraphSql(prompt);
-      setSqlResult(result);
       applyGraphFilter(result.graphFilter, companies);
     } catch (reason) {
-      setSqlResult(null);
-      setSqlError(reason instanceof Error ? reason.message : 'SQL agent failed');
+      setSqlError(reason instanceof Error ? reason.message : 'Could not filter the graph');
     } finally {
       setSqlBusy(false);
     }
@@ -365,43 +354,19 @@ export function KnowledgeGraphPage() {
           )}
         </aside>
         <div className="graph-promptbar">
-          {(sqlResult || sqlError) && (
-            <div className={`graph-sql-panel ${sqlError ? 'is-error' : ''}`}>
+          {sqlError && (
+            <div className="graph-sql-panel is-error">
               <div className="graph-sql-head">
-                <strong>{sqlError ? 'Query failed' : sqlResult?.explanation || 'SQL result'}</strong>
-                <button aria-label="Close SQL result" onClick={() => { setSqlResult(null); setSqlError(''); }}><X size={14} /></button>
+                <strong>Could not filter the graph</strong>
+                <button aria-label="Close error" onClick={() => setSqlError('')}><X size={14} /></button>
               </div>
-              {sqlResult?.graphFilter && (
-                <p className="graph-sql-filter">
-                  Graph filter · {sqlResult.graphFilter.allCompanies ? 'all companies' : sqlResult.graphFilter.companyName || sqlResult.graphFilter.companyTicker || selectedCompany?.name || 'current hub'}
-                  {sqlResult.graphFilter.entityTypes?.length ? ` · ${sqlResult.graphFilter.entityTypes.join(', ')}` : ''}
-                  {sqlResult.graphFilter.labelQuery ? ` · “${sqlResult.graphFilter.labelQuery}”` : ''}
-                </p>
-              )}
-              {sqlResult?.sql && <pre>{sqlResult.sql}</pre>}
-              {sqlError && <p>{sqlError}</p>}
-              {sqlResult && sqlResult.rows.length > 0 && (
-                <div className="graph-sql-table">
-                  <table>
-                    <thead>
-                      <tr>{Object.keys(sqlResult.rows[0]).map((column) => <th key={column}>{column}</th>)}</tr>
-                    </thead>
-                    <tbody>
-                      {sqlResult.rows.slice(0, 25).map((row, index) => (
-                        <tr key={index}>{Object.keys(sqlResult.rows[0]).map((column) => <td key={column}>{formatSqlCell(row[column])}</td>)}</tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <small>{sqlResult.rowCount} row{sqlResult.rowCount === 1 ? '' : 's'}</small>
-                </div>
-              )}
-              {sqlResult && sqlResult.rows.length === 0 && <p>No rows returned.</p>}
+              <p>{sqlError}</p>
             </div>
           )}
           <PromptBar
             placeholder="Show Moderna clinical trials and related news…"
             busy={sqlBusy}
-            hint="Graph + SQL agent"
+            hint="Filter the graph"
             onSend={(question) => void runSql(question)}
           />
         </div>

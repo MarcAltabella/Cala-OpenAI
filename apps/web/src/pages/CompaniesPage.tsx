@@ -46,9 +46,14 @@ function Tag({ label, index }: { label: string; index: number }) {
 
 export function CompaniesPage({ onOpen }: { onOpen: (id: string) => void }) {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<'name' | 'recency'>('name');
-  useEffect(() => { listCompanies().then(setCompanies); }, []);
+  useEffect(() => {
+    listCompanies()
+      .then((rows) => { setCompanies(rows); setError(null); })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load companies from Postgres'));
+  }, []);
   const rows = useMemo(() => companies
     .map((company) => {
       const ticker = company.ticker ?? '';
@@ -56,13 +61,15 @@ export function CompaniesPage({ onOpen }: { onOpen: (id: string) => void }) {
       return {
         ...company,
         ...detail,
-        recencyLabel: labelRecency(company.recency ?? (company.displayOrder % 2 === 0 ? 'high' : 'mid')),
+        recencyLabel: labelRecency(company.recency),
       };
     })
     .filter((company) => `${company.name} ${company.ticker} ${company.categories.join(' ')} ${company.development}`.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => sort === 'name'
       ? a.name.localeCompare(b.name)
       : a.recencyLabel.localeCompare(b.recencyLabel) || a.name.localeCompare(b.name)), [companies, query, sort]);
+
+  if (error) return <div className="records-page"><p>Could not load companies from Postgres: {error}</p></div>;
 
   return (
     <div className="records-page">

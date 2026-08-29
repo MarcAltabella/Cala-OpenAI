@@ -17,21 +17,6 @@ export type GraphEntityDetail = {
 };
 export type ServiceHealth = { status: 'ok' | 'degraded'; postgres: 'connected' | 'unavailable'; neo4j: 'connected' | 'unavailable' };
 
-const companies: Company[] = [
-  ['moderna', 'Moderna', 'MRNA'], ['pfizer', 'Pfizer', 'PFE'], ['eli-lilly', 'Eli Lilly', 'LLY'], ['jnj', 'Johnson & Johnson', 'JNJ'], ['roche', 'Roche', 'RHHBY'], ['abbvie', 'AbbVie', 'ABBV'], ['merck', 'Merck & Co.', 'MRK'], ['novartis', 'Novartis', 'NVS'], ['amgen', 'Amgen', 'AMGN'], ['sanofi', 'Sanofi', 'SNY']
-].map(([id, name, ticker], displayOrder) => ({ id, name, ticker, displayOrder, recency: displayOrder % 2 === 0 ? 'high' : 'mid' }));
-const runs: Run[] = companies.map((c, i) => ({
-  id: `run-${c.id}`,
-  companyId: c.id,
-  mode: 'delta',
-  status: i === 0 ? 'completed' : 'running',
-  phase: i === 0 ? 'completed' : 'healthcare_gate',
-  startedAt: null,
-  finishedAt: null,
-  error: null,
-  counts: {},
-}));
-
 const API_BASE_URL = (((import.meta as ImportMeta & { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL) ?? '').replace(/\/$/, '');
 const apiUrl = (path: string) => `${API_BASE_URL}${path}`;
 
@@ -47,8 +32,8 @@ async function json<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export async function listCompanies() { try { const response = await fetch(apiUrl('/companies')); if (response.ok) return await response.json() as Company[]; } catch {} return companies; }
-export async function listCompanyRuns(companyId: string) { try { const response = await fetch(apiUrl(`/companies/${companyId}/agent-runs`)); if (response.ok) return await response.json() as Run[]; } catch {} return runs.filter((r) => r.companyId === companyId); }
+export async function listCompanies() { return json<Company[]>('/companies'); }
+export async function listCompanyRuns(companyId: string) { return json<Run[]>(`/companies/${encodeURIComponent(companyId)}/agent-runs`); }
 export async function createAgentRun(companyId: string, mode: 'seed' | 'delta' = 'delta') { return requestJson<QueuedRun>('/runs', { method: 'POST', body: JSON.stringify({ companyId, mode }) }); }
 export async function getRun(runId: string) { return requestJson<Run>(`/runs/${encodeURIComponent(runId)}`); }
 export async function getRunEvents(runId: string) { return requestJson<RunEvent[]>(`/runs/${encodeURIComponent(runId)}/events`); }
