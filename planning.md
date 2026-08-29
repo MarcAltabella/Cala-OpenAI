@@ -58,6 +58,7 @@ flowchart LR
   - SEC EDGAR filings
   - Company investor-relations and news feeds
   - Healthcare news (trade/RSS sources configured in env; no scrape of paywalled bodies)
+  - Open-web news via Tavily (`search_web_news`, `TAVILY_API_KEY`): title + snippet + URL only; do not scrape paywalled bodies
 - Query Cala twice per qualifying run: a **healthcare/company-intel** snapshot in parallel with the research agent, and a **finance** snapshot only after Fastino Healthcare says the research is new and relevant.
 
 People and institutions are **not** ingested from LinkedIn or university website crawls in MVP. They are resolved from structured fields (authors, inventors, affiliations, sponsors, named entities in news/filings).
@@ -117,7 +118,7 @@ flowchart TD
   R[POST /runs] --> P[Fan-out]
   P --> C[Cala healthcare snapshot]
   P --> A[OpenAI research agent]
-  A --> T[Tools: papers patents trials news FDA SEC]
+  A --> T[Tools: papers trials news RSS web_news]
   T --> PG[(PostgreSQL + pgvector)]
   PG --> NJ[(Neo4j projection)]
   C --> J[Join]
@@ -152,15 +153,27 @@ flowchart TD
 
 The research agent uses OpenAI chat + tool calls. **Tool list is not frozen**; MVP starts with one tool per source adapter below. Add, drop, or merge tools in a follow-up without changing the run graph.
 
+### Implemented on `mauro/dev2-agents-pipeline`
+
+Shipped and tested (mocks; no live keys required for `pnpm test`):
+
+- Source adapters: PubMed, ClinicalTrials.gov, IR/RSS news (`NEWS_FEED_URL`), Tavily web news (`TAVILY_API_KEY`, snippets only)
+- Research currently **runs every tool sequentially** in `runResearch` (not LLM tool-picking yet); a failed tool is recorded and does not abort siblings or Cala
+- LangGraph: parallel Cala healthcare + research → relation pack → Fastino healthcare gate (`isNew && isRelevant`) → optional Cala finance + Fastino finance
+- Fastino clients are OpenAI JSON-schema stand-ins today (`OpenAIFastinoClient`); swap to Hugging Face later without changing the graph
+- Worker `enqueueRun` + `scripts/run-moderna.ts` demo
+- Deferred: patents, FDA, DailyMed, SEC, people/institution linking, dashboard UI, real Fastino HF endpoints
+
 Initial research tools (each wraps an ingestion adapter, timeout, provider-scoped errors):
 
 - `search_pubmed` / PMC
-- `search_patents` (PatentsView or equivalent)
+- `search_patents` (PatentsView or equivalent) — deferred
 - `search_clinical_trials`
-- `search_fda`
-- `search_dailymed`
-- `search_sec`
-- `search_news` (IR + healthcare feeds)
+- `search_fda` — deferred
+- `search_dailymed` — deferred
+- `search_sec` — deferred
+- `search_news` (IR + healthcare RSS/JSON feeds)
+- `search_web_news` (Tavily; title + snippet + URL; Fastino Healthcare does **not** call search)
 - `embed_and_upsert` (OpenAI embeddings into pgvector)
 
 The agent decides which tools to call for the company and `mode` (`seed` | `delta`). Failed tools are recorded on the run and do not abort the sibling Cala branch or other tools.
@@ -214,14 +227,14 @@ Persist as `finance_analyses`. Optional OpenAI step may turn the same evidence i
 
 | Role | Model | How it is called |
 | --- | --- | --- |
-| Research agent (tool calling) | OpenAI chat (e.g. `gpt-4.1` or `gpt-4o`) | LangGraph tool node |
+| Research agent (tool calling) | OpenAI chat (default `gpt-5.6-luna`) | LangGraph tool node |
 | Relation extract / JSON repair | OpenAI chat + structured outputs | After graph write |
 | Embeddings | OpenAI embeddings (e.g. `text-embedding-3-small`) | pgvector on documents and entities |
 | Healthcare gate | Fastino Nemotron 3.5 Lightning Healthcare | Hugging Face Inference API |
 | Finance impact | Fastino Nemotron 3.5 Lightning Finance | Hugging Face Inference API |
 | Market / company data | Cala | Healthcare snapshot in parallel; finance snapshot only after gate |
 
-Env: `OPENAI_API_KEY`, `HF_TOKEN`, `CALA_*`, `FASTINO_HEALTHCARE_MODEL`, `FASTINO_FINANCE_MODEL`. Fastino weights stay on Hugging Face; this app is an API client.
+Env: `OPENAI_API_KEY`, `HF_TOKEN`, `CALA_*`, `NEWS_FEED_URL`, `TAVILY_API_KEY`, `FASTINO_HEALTHCARE_MODEL`, `FASTINO_FINANCE_MODEL`. Fastino weights stay on Hugging Face; this app is an API client. Missing `TAVILY_API_KEY` skips web news (empty result), same as a missing IR feed.
 
 ### Data stores
 

@@ -1,4 +1,4 @@
 import { createCompany, listCompanies } from './repositories/companies.js';
-const names = [['Moderna','MRNA'],['BioNTech','BNTX'],['Regeneron Pharmaceuticals','REGN'],['Vertex Pharmaceuticals','VRTX'],['Gilead Sciences','GILD'],['Amgen','AMGN'],['Alnylam Pharmaceuticals','ALNY'],['Illumina','ILMN'],['CRISPR Therapeutics','CRSP'],['Sana Biotechnology','SANA']] as const;
+const names = [['Moderna','MRNA'],['BioNTech','BNTX'],['Regeneron Pharmaceuticals','REGN'],['Vertex Pharmaceuticals','VRTX'],['Gilead Sciences','GILD'],['Amgen','AMGN'],['Alnylam Pharmaceuticals','ALNY'],['Illumina','ILMN'],['CRISPR Therapeutics','CRSP'],['Sana Biotechnology','SANA'],['Pfizer','PFE'],['Johnson & Johnson','JNJ'],['Eli Lilly','LLY'],['AbbVie','ABBV'],['Merck','MRK'],['Bristol Myers Squibb','BMY'],['Roche','RHHBY'],['Novartis','NVS'],['AstraZeneca','AZN'],['Guardant Health','GH']] as const;
 export function seedCompanies(): void { if (listCompanies().length) return; names.forEach(([name, ticker]) => createCompany({ name, ticker })); }
 if (process.argv[1]?.endsWith('seed.ts')) { seedCompanies(); console.log(`seeded ${listCompanies().length} companies`); }

@@ -25,9 +25,10 @@
 - Use OpenAI for the research agent (tool calling), relation extract, JSON repair, and embeddings.
 - Cala healthcare snapshot runs **in parallel** with the research agent on every run; it is not gated.
 - Research tools wrap source adapters and may change; keep one adapter per PR.
-- Use live APIs: ClinicalTrials.gov, PubMed/PMC, PatentsView (or equivalent USPTO API), FDA, DailyMed, SEC EDGAR, company IR/news, healthcare news feeds, Cala, OpenAI, and Hugging Face.
+- Use live APIs: ClinicalTrials.gov, PubMed/PMC, PatentsView (or equivalent USPTO API), FDA, DailyMed, SEC EDGAR, company IR/news, Tavily web news (snippets only), healthcare news feeds, Cala, OpenAI, and Hugging Face.
+- Fastino Healthcare is a gate over stored evidence only; it must not call web search. Open-web news is a research adapter (`web_news`).
 - Keep the MVP local: Docker Compose, no auth, Redis, Supabase, managed database, or cloud scheduler.
-- Use Tailwind CSS and native React/HTML components for dashboard UI. Recreate only the Beautiful UI `Task Rows` and `Tool Chips` visual patterns for observable agent-run activity; do not add a component library. Buttons and sidebar items are rectangular with `rounded-md` and `shadow-xs`/`shadow-sm`, never pill-shaped.
+- Use Tailwind CSS and native React/HTML components for all dashboard UI; do not add a component, chart, or dashboard library in MVP.
 - Use React Flow (`@xyflow/react`) for the interactive knowledge-graph UI.
 - No HTTP route accepts Cypher.
 
@@ -40,7 +41,7 @@
 | Foundation | Any one developer | immediately | Workspace, containers, contracts, migrations |
 | A — data/API | Developer 1 | Foundation | Run queue, snapshot/gate/finance persistence, directory APIs |
 | B — ingestion/agents/graph | Developer 2 | Foundation contracts | Adapters-as-tools, LangGraph fan-out, Fastino clients, Neo4j projection |
-| C — dashboard | Developer 3 | Foundation contracts | Two-page Companies workspace and searchable graph explorer |
+| C — dashboard | Developer 3 | Foundation contracts | Graph explorer, entity pages, momentum reports UI |
 | Integration | All | A, B, C | Seeded Moderna momentum demo |
 
 ```mermaid
@@ -142,7 +143,7 @@ git commit -m "build: add local development workspace"
 - Test: `packages/db/src/schema.test.ts`
 
 **Interfaces:**
-- Produces `Company`, `Person`, `Institution`, `SourceDocument`, `Entity`, `Relationship`, `CalaEntity`, `CalaSnapshot`, `HealthcareGate`, `Development`, `ExpectedImpact`, `FinanceImpact`, `RelationPack`, `MomentumReport`, `AgentRun`, `AgentRunEvent`, `DailyReport` types.
+- Produces `Company`, `Person`, `Institution`, `SourceDocument`, `Entity`, `Relationship`, `CalaEntity`, `CalaSnapshot`, `HealthcareGate`, `Development`, `ExpectedImpact`, `FinanceImpact`, `RelationPack`, `MomentumReport`, `AgentRun`, `DailyReport` types.
 - `Entity` includes `id`, `type` (`company` | `person` | `institution` | `paper` | `patent` | `clinical_trial` | `news`), `externalId`, `label`, and `properties`.
 - `Relationship` includes `id`, `type`, `fromEntityId`, `toEntityId`, `sourceDocumentId`, `evidenceUrl`, and `confidence`.
 - `CalaEntity` includes `id`, `entityType`, `name`, and `mentions`; `CalaSnapshot` includes `id`, `companyId`, `kind` (`healthcare` | `finance`), `input`, `entities`, `results`, and `createdAt`.
@@ -150,7 +151,6 @@ git commit -m "build: add local development workspace"
 - `ExpectedImpact` includes `direction` (`up` | `down` | `unclear`), `magnitude` (`low` | `medium` | `high`), `horizon`, `confidence`.
 - `FinanceImpact` includes `developmentSummary`, `potentialProductOrCatalyst`, `expectedImpact`, `rationale`, `evidenceIds`.
 - `AgentRun` includes `id`, `companyId`, `mode`, `status`, `phase` (`queued` | `fanout` | `relations` | `healthcare_gate` | `stopped` | `finance` | `completed` | `failed`), `error`, `counts`.
-- `AgentRunEvent` includes `id`, `runId`, `kind` (`phase` | `tool_call` | `tool_result` | `error`), `toolName`, redacted `input`, safe `output` or `summary`, `error`, and `createdAt`. It explicitly has no reasoning or chain-of-thought field.
 - `MomentumReport` includes `companyId`, `thesis`, `events` (ordered precursor list with entity ids), `generatedAt`.
 
 - [ ] **Step 1: Write the failing schema test**
@@ -175,7 +175,7 @@ Expected: fail because the schema and repository do not exist.
 
 - [ ] **Step 3: Add the Drizzle schema, generated migrations, and typed contracts**
 
-Define the tables named in `planning.md` with Drizzle's typed PostgreSQL schema, enable `vector` through a generated migration, and enforce `UNIQUE(provider, provider_id)` on documents and `UNIQUE(type, external_id)` on entities. Include the run-graph tables `cala_snapshots` (with a `kind` column for healthcare vs finance), `healthcare_gates`, `finance_impacts`, and append-only `agent_run_events`. Use Drizzle's migration runner and insert API in `client.ts` and `seed.ts`. Seed twenty companies; give Moderna `displayOrder: 0` and all others increasing orders. Do not hand-author runtime SQL queries or duplicate the schema in a SQL statement array.
+Define the tables named in `planning.md` with Drizzle's typed PostgreSQL schema, enable `vector` through a generated migration, and enforce `UNIQUE(provider, provider_id)` on documents and `UNIQUE(type, external_id)` on entities. Include the run-graph tables `cala_snapshots` (with a `kind` column for healthcare vs finance), `healthcare_gates`, and `finance_impacts`. Use Drizzle's migration runner and insert API in `client.ts` and `seed.ts`. Seed twenty companies; give Moderna `displayOrder: 0` and all others increasing orders. Do not hand-author runtime SQL queries or duplicate the schema in a SQL statement array.
 
 - [ ] **Step 4: Run the test and migration**
 
@@ -199,22 +199,19 @@ Developer 1 does **not** call Cala, OpenAI, or Fastino. Developer 1 owns HTTP co
 **Files:**
 - Create: `apps/api/src/app.ts`, `apps/api/src/index.ts`
 - Create: `apps/api/src/routes/{companies,people,institutions,runs,reports,knowledge-graph}.ts`
-- Create: `packages/db/src/repositories/{companies,people,institutions,runs,reports,entities,snapshots,gates,finance-impacts,run-events}.ts`
+- Create: `packages/db/src/repositories/{companies,people,institutions,runs,reports,entities,snapshots,gates,finance-impacts}.ts`
 - Test: `apps/api/src/routes/{companies,runs,reports}.test.ts`
 
 **Interfaces:**
 - `GET /companies` returns `Company[]` ordered by `displayOrder` then name.
 - `POST /companies` accepts `{ name: string, ticker: string | null }` and creates any additional watchlist company.
 - `GET /companies/:id/timeline` returns mixed events (papers, patents, trials, news, filings) ordered by date.
-- `GET /companies/:id` returns the selected company's compact overview: latest run status, healthcare verdict, finance impact, and last-updated timestamp.
-- `GET /companies/:id/agent-runs` returns its runs newest first with observable status/phase/count summaries.
 - `GET /companies/:id/people` returns `Person[]` linked by `WORKS_AT` / extraction edges.
 - `GET /people/:id` and `GET /institutions/:id` return the entity plus neighborhood summary.
 - `POST /runs` accepts `{ companyId: string, mode: 'seed' | 'delta' }` and returns `{ id, status: 'queued' }` with HTTP 202.
 - `GET /runs/:id` returns `{ id, status, phase, startedAt, finishedAt, error, counts }` where `counts` includes cala healthcare, documents, gate, and finance.
-- `GET /runs/:id/events` returns ordered, safe-to-display run events: phase changes, tool call names, redacted inputs, outputs or summaries, errors, and timestamps. It never stores or returns private chain-of-thought.
-- Repositories the worker calls: insert/update `source_documents`, `entities`, `relationships`, `cala_snapshots`, `healthcare_gates`, `finance_impacts`, and append-only `agent_run_events`. Event persistence must redact secrets and omit model reasoning.
-- `GET /knowledge-graph?companyId=&types=&query=` filters graph nodes and edges by company, type, and a case-insensitive keyword match against node labels and evidence text; it returns serialized nodes and edges from the Neo4j read model via `packages/graph` `neighborhood`. No route accepts Cypher.
+- Repositories the worker calls: insert/update `source_documents`, `entities`, `relationships`, `cala_snapshots`, `healthcare_gates`, `finance_impacts`.
+- `GET /knowledge-graph?companyId=&types=&personId=&institutionId=` returns serialized nodes and edges from the Neo4j read model via `packages/graph` `neighborhood`; no route accepts Cypher.
 - `GET /reports/momentum/:companyId` returns the latest `MomentumReport` or 404.
 - `GET /companies/:id/developments` returns the latest `HealthcareGate` / development for that company.
 
@@ -236,7 +233,7 @@ Expected: fail because the Express app has no routes.
 
 - [ ] **Step 3: Implement the minimum routes and repositories**
 
-The run route inserts the row and invokes the worker through a local `enqueueRun(runId)` function; it must not execute LangGraph within the request handler. Add the minimal migration/repository for append-only observable run events and the read routes above. Keep the existing `POST /companies` contract for later, but the MVP frontend only renders a visible inert Add Company control.
+The run route inserts the row and invokes the worker through a local `enqueueRun(runId)` function; it must not execute LangGraph within the request handler.
 
 - [ ] **Step 4: Verify the contract**
 
@@ -246,7 +243,7 @@ Expected: pass.
 
 - [ ] **Step 5: Commit**
 
-Split if the diff exceeds PR-SCA: companies+runs first, then observable run events plus graph keyword filtering. The event contract must land before the run inspector UI.
+Split if the diff exceeds PR-SCA: companies+runs first, then people/institutions/timeline, then momentum report read.
 
 ```bash
 git add apps/api packages/db/src/repositories
@@ -257,12 +254,12 @@ git commit -m "feat(api): add directory timeline and run endpoints"
 
 **Owner:** Developer 2
 
-Adapters are the **tools** behind the OpenAI research agent. Tool names may change later; each adapter remains its own PR. This pass ships a vertical slice: PubMed, ClinicalTrials, and news/IR. Patents, FDA, DailyMed, and SEC are deferred to follow-up PRs.
+Adapters are the **tools** behind the OpenAI research agent. Tool names may change later; each adapter remains its own PR. **Shipped on this branch:** PubMed, ClinicalTrials, news/IR, and Tavily `web_news`. Patents, FDA, DailyMed, and SEC remain deferred. Research still executes tools sequentially in `runResearch`; Fastino Healthcare has no search tool.
 
 **Files:**
 - Create: `packages/ingestion/src/types.ts`, `packages/ingestion/src/normalize.ts`
-- Create: `packages/ingestion/src/sources/{pubmed,clinical-trials,news}.ts`
-- Create: `packages/agents/src/tools.ts` (thin LangChain tool wrappers; add as adapters land)
+- Create: `packages/ingestion/src/sources/{pubmed,clinical-trials,news,web-news}.ts`
+- Create: `packages/agents/src/tools.ts` (thin wrappers; add as adapters land)
 - Test: `packages/ingestion/src/normalize.test.ts`, one `*.test.ts` per source adapter (captured JSON fixtures)
 
 **Interfaces:**
@@ -311,7 +308,7 @@ git add packages/ingestion/src/{types.ts,normalize.ts,sources/clinical-trials.ts
 git commit -m "feat(ingestion): add clinical trials source"
 ```
 
-Repeat with separate commits/PRs for PubMed and news. Patents, FDA, DailyMed, and SEC are deferred; do not combine provider adapters.
+Repeat with separate commits/PRs for PubMed, news/IR, and Tavily `web_news`. Patents, FDA, DailyMed, and SEC are deferred; do not combine provider adapters.
 
 ## Task 5: Implement the LangGraph run: fan-out, gate, optional finance
 
@@ -462,104 +459,46 @@ git commit -m "feat(graph): project healthcare world relationships"
 **Owner:** Developer 2
 
 **Files:**
-- Create: `apps/worker/src/index.ts` (`enqueueRun(runId)` runs `runIntelligenceWorkflow` fire-and-forget, updating `agent_runs.phase`/`status` and appending safe observable run events), `apps/worker/src/scheduler.ts` (minimal daily delta)
+- Create: `apps/worker/src/index.ts` (`enqueueRun(runId)` runs `runIntelligenceWorkflow` fire-and-forget, updating `agent_runs.phase`/`status`), `apps/worker/src/scheduler.ts` (minimal daily delta)
 - Modify: `apps/api/src/routes/runs.ts` — bind the route's `enqueueRun` to the worker at app startup; keep the no-op stub for existing API tests.
 - Create: `scripts/run-moderna.ts` — live end-to-end run for Moderna, gated on real `OPENAI_API_KEY` and `CALA_API_KEY`; not part of `pnpm test`.
 
-- [ ] **Step 1:** Wire `enqueueRun` and append one event for every phase transition, tool call/result, and recoverable tool error. Redact credentials and never persist model reasoning; verify `pnpm --filter @cala/worker typecheck && pnpm --filter @cala/api test`.
+- [ ] **Step 1:** Wire `enqueueRun`; verify `pnpm --filter @cala/worker typecheck && pnpm --filter @cala/api test`.
 - [ ] **Step 2:** Run `pnpm typecheck && pnpm test` (mock-backed suite, no live keys).
 - [ ] **Step 3:** Optional: `docker compose -f infra/docker-compose.yml up -d`, then `pnpm tsx scripts/run-moderna.ts` to eyeball the gate and finance output.
 - [ ] **Step 4:** Commit `feat(worker): run intelligence workflow on enqueue`.
 
-## Task 7: Build the Companies workspace
+## Task 7: Build the graph explorer shell
 
 **Owner:** Developer 3
 
 **Files:**
 - Create: `apps/web/src/main.tsx`, `apps/web/src/App.tsx`, `apps/web/src/lib/api.ts`
-- Create: `apps/web/src/pages/CompaniesPage.tsx`, `apps/web/src/components/{AppNav,CompaniesTable,CompanyWorkspace,AgentRunList,RunInspector,ToolEventList}.tsx`
-- Test: `apps/web/src/pages/CompaniesPage.test.tsx`, `apps/web/src/components/RunInspector.test.tsx`
-
-**Interfaces:**
-- `listCompanies(): Promise<Company[]>`
-- `getCompany(id: string): Promise<CompanyOverview>`
-- `listCompanyRuns(id: string): Promise<AgentRun[]>`
-- `getRunEvents(id: string): Promise<AgentRunEvent[]>`
-
-`/` is the default Companies page. The only sidebar entries are Companies and Knowledge Graph. Selecting a company changes the in-page workspace to `?company=<id>`; selecting a run adds `&run=<id>`. These query values restore the same view after refresh and are shareable, but they never introduce a third sidebar page or a detail route.
-
-```mermaid
-flowchart LR
-  T[Companies table] --> C[?company=id workspace]
-  C --> R[Agent runs tab]
-  R --> I[&run=id inspector]
-  I --> E[GET /runs/id/events]
-```
-
-- [ ] **Step 1: Write the selection and inspection tests**
-
-```tsx
-it('opens Moderna in the Companies workspace without leaving the page', async () => {
-  render(<CompaniesPage />);
-  await userEvent.click(await screen.findByRole('button', { name: /moderna/i }));
-  expect(new URLSearchParams(window.location.search).get('company')).toBe('moderna');
-  expect(screen.getByRole('tab', { name: /agent runs/i })).toBeVisible();
-});
-
-it('renders observable tool outputs but not private reasoning', async () => {
-  render(<RunInspector runId="run-1" />);
-  expect(await screen.findByText(/search_pubmed/i)).toBeVisible();
-  expect(screen.queryByText(/chain.of.thought|reasoning/i)).not.toBeInTheDocument();
-});
-```
-
-- [ ] **Step 2: Run the tests to verify failure**
-
-Run: `pnpm --filter @cala/web test CompaniesPage.test.tsx RunInspector.test.tsx`
-
-Expected: fail because the workspace does not exist.
-
-- [ ] **Step 3: Implement the two-level Companies experience**
-
-Render a rounded, lightly shadowed Tailwind table with company/ticker, latest run status, healthcare verdict, finance impact, and last updated. Render a visible inert Add Company button. Within the selected-company workspace, provide Overview, Agent runs, and Outputs tabs. The run inspector uses Beautiful UI-inspired Task Rows and Tool Chips for phase changes and tool events, with expandable redacted inputs, outputs/summaries, errors, and timestamps. Do not show model chain-of-thought. Use only native Tailwind controls elsewhere; all rectangular buttons use `rounded-md` and `shadow-xs`.
-
-- [ ] **Step 4: Verify UI behavior**
-
-Run: `pnpm --filter @cala/web test && pnpm --filter @cala/web typecheck`
-
-Expected: pass.
-
-- [ ] **Step 5: Commit**
-
-Keep the PR under the PR-SCA threshold: land the company table/workspace first, then the run inspector if required.
-
-```bash
-git add apps/web
-git commit -m "feat(web): add company run workspace"
-```
-
-## Task 8: Build the searchable knowledge graph explorer
-
-**Owner:** Developer 3
-
-**Files:**
-- Create: `apps/web/src/pages/KnowledgeGraphPage.tsx`, `apps/web/src/components/KnowledgeGraph.tsx`
+- Create: `apps/web/src/pages/KnowledgeGraphPage.tsx`, `apps/web/src/components/KnowledgeGraph.tsx`, `apps/web/src/components/AppNav.tsx`, `apps/web/src/components/RunNowButton.tsx`
 - Test: `apps/web/src/pages/KnowledgeGraphPage.test.tsx`
 
 **Interfaces:**
-- `getKnowledgeGraph(filters: { companyId?: string; types?: string[]; query?: string }): Promise<{ nodes: Entity[]; edges: Relationship[] }>`
+- `getKnowledgeGraph(filters: { companyId?: string; types?: string[] }): Promise<{ nodes: Entity[]; edges: Relationship[] }>`
+- `startRun(input: { companyId?: string; mode: 'seed' | 'delta' }): Promise<AgentRun>`
 
-`/knowledge-graph` is the second and final sidebar page.
+The knowledge graph page is the default route (`/`).
 
-- [ ] **Step 1: Write the filter and keyword-search test**
+```mermaid
+flowchart LR
+  U[Type and company filter] --> A[GET /knowledge-graph]
+  A --> B[Nodes and edges]
+  B --> C[Graph renderer]
+  C --> D[Selected node detail]
+```
+
+- [ ] **Step 1: Write the filter test**
 
 ```tsx
-it('reloads the graph for Moderna, papers, and a keyword', async () => {
+it('reloads the graph for Moderna and papers', async () => {
   render(<KnowledgeGraphPage />);
   await userEvent.selectOptions(screen.getByLabelText('Company'), 'moderna');
   await userEvent.click(screen.getByLabelText('Papers'));
-  await userEvent.type(screen.getByLabelText('Search graph'), 'melanoma');
-  expect(mockGetKnowledgeGraph).toHaveBeenCalledWith({ companyId: 'moderna', types: expect.arrayContaining(['paper']), query: 'melanoma' });
+  expect(mockGetKnowledgeGraph).toHaveBeenCalledWith({ companyId: 'moderna', types: expect.arrayContaining(['paper']) });
 });
 ```
 
@@ -569,9 +508,9 @@ Run: `pnpm --filter @cala/web test KnowledgeGraphPage.test.tsx`
 
 Expected: fail because the page does not exist.
 
-- [ ] **Step 3: Implement graph navigation and rendering**
+- [ ] **Step 3: Implement navigation, graph renderer, and Run now**
 
-Use React Flow to render filtered API nodes and edges. Provide keyword search, company and node-type filters, plus an in-page selected-node panel with label, type, evidence URL, and confidence. Do not add graph editing, path-finding, or natural-language Q&A.
+Use React Flow to render the API response. On selection show node label, type, evidence URL, and confidence. Do not add graph editing or natural-language Q&A. Run now starts `{ mode: 'delta' }` and shows returned run status.
 
 - [ ] **Step 4: Verify UI behavior**
 
@@ -583,7 +522,108 @@ Expected: pass.
 
 ```bash
 git add apps/web
-git commit -m "feat(web): add searchable knowledge graph"
+git commit -m "feat(web): add healthcare knowledge graph explorer"
+```
+
+## Task 8: Build company, person, and institution pages
+
+**Owner:** Developer 3
+
+**Files:**
+- Create: `apps/web/src/pages/{CompaniesPage,CompanyDetailPage,PersonPage,InstitutionPage}.tsx`
+- Create: `apps/web/src/components/{Timeline,PersonList,DevelopmentList,AgentRunList}.tsx`
+- Test: `apps/web/src/pages/CompaniesPage.test.tsx`, `apps/web/src/pages/CompanyDetailPage.test.tsx`
+
+**Interfaces:**
+- `listCompanies(): Promise<Company[]>`
+- `getCompanyTimeline(id: string): Promise<TimelineEvent[]>`
+- `getPerson(id: string): Promise<Person>`
+- `getInstitution(id: string): Promise<Institution>`
+
+- [ ] **Step 1: Write the default-order and timeline tests**
+
+```tsx
+it('shows Moderna before the remaining seeded companies', async () => {
+  render(<CompaniesPage />);
+  expect((await screen.findAllByRole('link'))[0]).toHaveTextContent('Moderna');
+});
+
+it('lists a patent and a paper on the company timeline', async () => {
+  render(<CompanyDetailPage />);
+  expect(await screen.findByText(/patent/i)).toBeInTheDocument();
+  expect(await screen.findByRole('link', { name: /pubmed/i })).toBeVisible();
+});
+```
+
+- [ ] **Step 2: Run the tests to verify failure**
+
+Run: `pnpm --filter @cala/web test CompaniesPage.test.tsx`
+
+Expected: fail because the pages do not exist.
+
+- [ ] **Step 3: Implement directory and entity detail views**
+
+Use Tailwind CSS and native React/HTML only. Company detail shows timeline (papers, patents, trials, news), linked people and institutions, developments, finance findings, and agent statuses. Person and institution pages show affiliation and connected papers/patents/trials.
+
+- [ ] **Step 4: Verify routes and tests**
+
+Run: `pnpm --filter @cala/web test && pnpm --filter @cala/web typecheck`
+
+Expected: pass.
+
+- [ ] **Step 5: Commit**
+
+Split company list vs detail vs person/institution if the diff is large.
+
+```bash
+git add apps/web
+git commit -m "feat(web): show company people and research timeline"
+```
+
+## Task 9: Build momentum and daily report pages
+
+**Owner:** Developer 3
+
+**Files:**
+- Create: `apps/web/src/pages/{ReportsPage,MomentumReportPage,ReportDetailPage}.tsx`
+- Create: `apps/web/src/components/FinanceFindingCard.tsx`
+- Test: `apps/web/src/pages/MomentumReportPage.test.tsx`
+
+**Interfaces:**
+- `getMomentumReport(companyId: string): Promise<MomentumReport>`
+- `getReport(id: string): Promise<DailyReport>`
+
+- [ ] **Step 1: Write the precursor-link test**
+
+```tsx
+it('links momentum events to graph entities and evidence', async () => {
+  render(<MomentumReportPage />);
+  expect(await screen.findByRole('link', { name: /source patent/i })).toHaveAttribute('href', expect.stringContaining('/knowledge-graph'));
+  expect(await screen.findByText(/melanoma/i)).toBeInTheDocument();
+});
+```
+
+- [ ] **Step 2: Run the test to verify failure**
+
+Run: `pnpm --filter @cala/web test MomentumReportPage.test.tsx`
+
+Expected: fail because the page does not exist.
+
+- [ ] **Step 3: Implement momentum and daily briefing views**
+
+Momentum report must show an ordered precursor trail (patents, papers, collaborations, trials, acquisitions, disclosures) then the public catalyst, each linked to company/person/institution and evidence. Daily report ranks qualifying finance findings by impact and confidence.
+
+- [ ] **Step 4: Verify routes and tests**
+
+Run: `pnpm --filter @cala/web test && pnpm --filter @cala/web typecheck`
+
+Expected: pass.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/web
+git commit -m "feat(web): show company momentum reports"
 ```
 
 ## Task 10: Verify the seeded Moderna momentum demo
@@ -641,13 +681,14 @@ git commit -m "docs: add local demo runbook"
 1. `build: add local development workspace`
 2. `feat(data): define healthcare graph records`
 3. `feat(api): add directory timeline and run endpoints` (split if needed)
-4. Vertical-slice source-adapter PRs (pubmed, clinical-trials, news); patents, fda, dailymed, sec deferred
-5. `feat(agents): fan out research and gate finance analysis` (split Cala+Fastino clients / research / workflow if needed)
-6. `feat(graph): project healthcare world relationships`
-6b. `feat(worker): run intelligence workflow on enqueue`
-7. `feat(web): add company run workspace`
-8. `feat(web): add searchable knowledge graph`
-9. `docs: add local demo runbook`
+4. Vertical-slice source-adapter PRs (pubmed, clinical-trials, news, web_news/Tavily); patents, fda, dailymed, sec deferred
+5. `feat(agents): fan out research and gate finance analysis` (split Cala+Fastino clients / research / workflow if needed) — **shipped** on `mauro/dev2-agents-pipeline`
+6. `feat(graph): project healthcare world relationships` — **shipped**
+6b. `feat(worker): run intelligence workflow on enqueue` — **shipped**
+7. `feat(web): add healthcare knowledge graph explorer`
+8. `feat(web): show company people and research timeline`
+9. `feat(web): show company momentum reports`
+10. `docs: add local demo runbook`
 
 Each PR description must use:
 
@@ -664,8 +705,7 @@ Each PR description must use:
 ## Self-review
 
 - Scope coverage: POST /runs fan-out, Cala healthcare vs finance (real `knowledge/query` client + mock), OpenAI research tools, Fastino gate and finance behind a swappable OpenAI-backed client, PostgreSQL, Neo4j, worker wiring, and the Moderna demo are assigned to tasks.
-- Developer 1 owns the run-graph contracts and tables (`cala_snapshots`, `healthcare_gates`, `finance_impacts`, `agent_run_events`) in Task 2, the graph keyword filter, and read-only run-event API routes in Task 3; Developer 2 consumes and appends events.
-- Developer 2 vertical slice: pubmed/clinical-trials/news adapters (Task 4), dependency-injected workflow (Task 5), Neo4j projection with a fake driver (Task 6), worker + live demo with observable run events (Task 6b). Patents, FDA, DailyMed, SEC, people/institution linking, and momentum synthesis are explicit follow-ups.
-- Developer 3 delivers exactly two sidebar pages: the default Companies workspace (in-page company/run selection using query state) and the searchable React Flow knowledge graph. Standalone person, institution, report, and momentum pages are deferred.
+- Developer 1 owns the run-graph contracts and tables (`cala_snapshots`, `healthcare_gates`, `finance_impacts`) in Task 2 and the `GET /knowledge-graph` route in Task 3; Developer 2 consumes them.
+- Developer 2 vertical slice **shipped** on `mauro/dev2-agents-pipeline`: pubmed/clinical-trials/news/web_news adapters (Task 4), dependency-injected workflow (Task 5), Neo4j projection with a fake driver (Task 6), worker + live demo (Task 6b). `web_news` is Tavily title+snippet+URL; it does not change the healthcare gate. Remaining: dashboard (Developer 3), patents/FDA/DailyMed/SEC, people/institution linking, momentum synthesis, real Fastino HF endpoints.
 - Testability: every external service (Cala, Fastino, OpenAI, Neo4j) is injected, so `pnpm test` passes with mocks and in-memory repos; live keys are only needed for `scripts/run-moderna.ts`.
 - No placeholders: every task declares files, interfaces, a focused test, runnable commands, and a commit.

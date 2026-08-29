@@ -1,10 +1,23 @@
-import type { Entity, Relationship } from '@cala/contracts';
-import { listEntities, listRelationships } from '@cala/db/src/repositories/entities.js';
-export type GraphReader = (filters: { companyId?: string; types?: string[]; query?: string; personId?: string; institutionId?: string }) => Promise<{ nodes: Entity[]; edges: Relationship[] }>;
-export const neighborhood: GraphReader = async ({ companyId, types, query, personId, institutionId }) => {
-  const keyword = query?.toLocaleLowerCase();
-  const nodes = listEntities().filter(node => (!types?.length || types.includes(node.type)) && (!companyId || node.properties.companyId === companyId || node.id === companyId) && (!personId || node.id === personId) && (!institutionId || node.id === institutionId) && (!keyword || `${node.label} ${JSON.stringify(node.properties)}`.toLocaleLowerCase().includes(keyword)));
-  const nodeIds = new Set(nodes.map(node => node.id));
-  const edges = listRelationships().filter(edge => nodeIds.has(edge.fromEntityId) && nodeIds.has(edge.toEntityId));
-  return { nodes, edges };
-};
+// Cypher used by the Neo4j projector. Entities and relationships are merged on
+// their PostgreSQL ids so Postgres stays the source of truth and projection is
+// idempotent. No route ever accepts raw Cypher from callers.
+export const MERGE_ENTITY = `
+MERGE (e:Entity { id: $id })
+SET e.entityType = $entityType, e.label = $label, e.sourceId = $sourceId
+`;
+
+export const MERGE_RELATIONSHIP = `
+MATCH (from:Entity { id: $fromEntityId })
+MATCH (to:Entity { id: $toEntityId })
+MERGE (from)-[r:REL { id: $id }]->(to)
+SET r.relationshipType = $relationshipType, r.evidenceDocumentId = $evidenceDocumentId
+`;
+
+// One-hop neighborhood around a seed entity, optionally filtered by relationship type.
+export const NEIGHBORHOOD = `
+MATCH (seed:Entity { id: $seedId })-[r:REL]-(other:Entity)
+WHERE ($types IS NULL OR r.relationshipType IN $types)
+  AND ($query IS NULL OR toLower(seed.label) CONTAINS toLower($query) OR toLower(other.label) CONTAINS toLower($query))
+RETURN seed, r, other
+LIMIT $limit
+`;
