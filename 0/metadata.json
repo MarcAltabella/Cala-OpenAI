@@ -1,0 +1,206 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M176SZ58PWR3196ZV3NXTQ3N",
+  "session_id": "6daa0bee-25d0-441d-b808-2b32b77bf85d",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-29T16:49:26.197072Z",
+  "branch": "mauro/interactive-knowledge-graph",
+  "checkpoints_count": 15,
+  "save_step_count": 11,
+  "files_touched": [
+    "apps/api/src/app.ts",
+    "apps/api/src/routes/companies.test.ts",
+    "apps/api/src/routes/companies.ts",
+    "apps/api/src/routes/health.ts",
+    "apps/api/src/routes/knowledge-graph.ts",
+    "apps/api/src/routes/run-events.test.ts",
+    "apps/api/src/routes/runs.test.ts",
+    "apps/api/src/routes/runs.ts",
+    "apps/web/src/agent-ui.css",
+    "apps/web/src/components/PromptBar.css",
+    "apps/web/src/components/PromptBar.tsx",
+    "apps/web/src/lib/api.ts",
+    "apps/web/src/lib/graph.test.ts",
+    "apps/web/src/lib/graph.ts",
+    "apps/web/src/pages/CompaniesPage.tsx",
+    "apps/web/src/pages/KnowledgeGraphPage.tsx",
+    "apps/web/src/styles.css",
+    "apps/web/vite.config.ts",
+    "apps/worker/src/index.test.ts",
+    "package.json",
+    "packages/agents/src/cala.test.ts",
+    "packages/agents/src/deps.ts",
+    "packages/agents/src/fastino.test.ts",
+    "packages/agents/src/index.ts",
+    "packages/agents/src/research.test.ts",
+    "packages/agents/src/research.ts",
+    "packages/agents/src/sql.test.ts",
+    "packages/agents/src/sql.ts",
+    "packages/agents/src/workflow.test.ts",
+    "packages/agents/src/workflow.ts",
+    "packages/contracts/src/index.ts",
+    "packages/db/drizzle/0003_relationship_endpoints.sql",
+    "packages/db/drizzle/0004_company_recency.sql",
+    "packages/db/drizzle/meta/_journal.json",
+    "packages/db/src/index.ts",
+    "packages/db/src/readonly-sql.test.ts",
+    "packages/db/src/readonly-sql.ts",
+    "packages/db/src/repositories/from-env.ts",
+    "packages/db/src/repositories/graph-details.ts",
+    "packages/db/src/repositories/in-memory.ts",
+    "packages/db/src/repositories/postgres.test.ts",
+    "packages/db/src/repositories/postgres.ts",
+    "packages/db/src/repositories/types.ts",
+    "packages/db/src/schema.ts",
+    "packages/db/src/seed.ts",
+    "packages/graph/src/client.ts",
+    "packages/graph/src/index.ts",
+    "packages/graph/src/project.test.ts",
+    "packages/graph/src/queries.ts",
+    "packages/graph/src/types.ts",
+    "packages/ingestion/src/sources/adapters.test.ts",
+    "pnpm-lock.yaml",
+    "scripts/run-moderna.ts",
+    "scripts/seed-watchlist.ts"
+  ],
+  "agent": "Cursor",
+  "model": "auto-smart",
+  "turn_id": "2a2a07c458fb",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 697883,
+    "cache_creation_tokens": 364324,
+    "cache_read_tokens": 20022836,
+    "output_tokens": 96563,
+    "api_call_count": 10
+  },
+  "session_metrics": {
+    "turn_count": 15,
+    "context_tokens": 245184,
+    "context_window_size": 256000
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-29T16:49:26.1302Z",
+    "agent_lines": 5309,
+    "agent_removed": 140,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 5309,
+    "total_lines_changed": 5449,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 604,
+      "agent_lines_removed": 79,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 634,
+      "agent_lines_removed": 88,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 634,
+      "agent_lines_removed": 88,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 634,
+      "agent_lines_removed": 88,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4013,
+      "agent_lines_removed": 158,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4483,
+      "agent_lines_removed": 180,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4503,
+      "agent_lines_removed": 180,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4503,
+      "agent_lines_removed": 180,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 10,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4503,
+      "agent_lines_removed": 180,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 11,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4792,
+      "agent_lines_removed": 209,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    }
+  ]
+}
