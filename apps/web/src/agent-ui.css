@@ -1,0 +1,4 @@
+.task-rows-header{text-transform:none;letter-spacing:normal}.task-view-results{appearance:none;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:34px;margin-top:12px;padding:8px 12px;border:1px solid #a9d3b2;border-radius:9px;background:#edf8ef;color:#2f7c43;font:600 12px/1.2 inherit;cursor:pointer;box-shadow:0 1px 2px rgb(15 23 42 / 6%)}.task-view-results:hover{background:#e1f3e5}.task-view-results span{font-size:15px;line-height:1}
+.recommendation-actions{display:flex;flex-shrink:0;gap:7px}.recommendation-primary{min-width:112px;height:auto;min-height:30px;line-height:1.1;text-align:center;white-space:normal}
+.predict-workspace-button{font-size:19px;font-weight:600;letter-spacing:-.03em}.graph-page,.graph-canvas-shell{border:0!important}
+@media(max-width:600px){.graph-main-content{height:100vh;padding:0}.graph-canvas-shell{height:100%;min-height:0}.graph-promptbar{bottom:12px;padding:0 10px}}
