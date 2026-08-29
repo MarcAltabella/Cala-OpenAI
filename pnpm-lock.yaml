@@ -8,6 +8,24 @@ importers:
 
   .:
     devDependencies:
+      '@cala/agents':
+        specifier: workspace:*
+        version: link:packages/agents
+      '@cala/contracts':
+        specifier: workspace:*
+        version: link:packages/contracts
+      '@cala/db':
+        specifier: workspace:*
+        version: link:packages/db
+      '@cala/graph':
+        specifier: workspace:*
+        version: link:packages/graph
+      '@cala/ingestion':
+        specifier: workspace:*
+        version: link:packages/ingestion
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.12
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
