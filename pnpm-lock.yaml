@@ -41,6 +41,9 @@ importers:
       '@cala/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@cala/graph':
+        specifier: workspace:*
+        version: link:../../packages/graph
       '@cala/worker':
         specifier: workspace:*
         version: link:../worker
