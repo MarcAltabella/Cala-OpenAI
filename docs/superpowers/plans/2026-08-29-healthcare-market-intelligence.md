@@ -4,9 +4,9 @@
 
 **Goal:** Build a local-first dashboard that monitors an unlimited company watchlist, seeds ten biotech/healthcare companies, analyzes material healthcare developments, and produces cross-company market-impact reports.
 
-**Architecture:** Express serves a React/Vite dashboard and starts durable LangGraph runs. PostgreSQL with pgvector is the source of truth for operational data and retrieval; Neo4j is rebuilt from approved PostgreSQL entities and relationships for graph exploration. LangChain/LangGraph is the sole agent framework.
+**Architecture:** Express serves a React/Vite dashboard and starts durable LangGraph runs. PostgreSQL with pgvector is the source of truth for operational data and retrieval, accessed through Drizzle ORM and its typed PostgreSQL schema; Neo4j is rebuilt from approved PostgreSQL entities and relationships for graph exploration. LangChain/LangGraph is the sole agent framework.
 
-**Tech Stack:** TypeScript, pnpm workspaces, React, Vite, Tailwind CSS, Express, React Flow (`@xyflow/react`), PostgreSQL 16 + pgvector, Neo4j, LangChain/LangGraph, Fastino Healthcare and Finance models, Cala Finance API, Docker Compose.
+**Tech Stack:** TypeScript, pnpm workspaces, React, Vite, Tailwind CSS, Express, React Flow (`@xyflow/react`), PostgreSQL 16 + pgvector, Drizzle ORM, Neo4j, LangChain/LangGraph, Fastino Healthcare and Finance models, Cala Finance API, Docker Compose.
 
 **Spec:** `planning.md`
 
@@ -122,7 +122,7 @@ git commit -m "build: add local development workspace"
 
 **Files:**
 - Create: `packages/contracts/src/index.ts`
-- Create: `packages/db/src/schema.ts`, `packages/db/src/client.ts`, `packages/db/src/seed.ts`
+- Create: `packages/db/src/schema.ts`, `packages/db/src/client.ts`, `packages/db/src/seed.ts`, `packages/db/drizzle.config.ts`, `packages/db/drizzle/`
 - Test: `packages/db/src/schema.test.ts`
 
 **Interfaces:**
@@ -145,9 +145,9 @@ Run: `pnpm --filter @cala/db test schema.test.ts`
 
 Expected: fail because the schema and repository do not exist.
 
-- [ ] **Step 3: Add migrations and typed contracts**
+- [ ] **Step 3: Add the Drizzle schema, generated migrations, and typed contracts**
 
-Create tables named in `planning.md`, enable `vector`, and enforce `UNIQUE(provider, provider_id)`. Seed ten companies in `seed.ts`; give Moderna `displayOrder: 0` and all others increasing orders.
+Define the tables named in `planning.md` with Drizzle's typed PostgreSQL schema, enable `vector` through a generated migration, and enforce `UNIQUE(provider, provider_id)`. Use Drizzle's migration runner and insert API in `client.ts` and `seed.ts`. Seed ten companies; give Moderna `displayOrder: 0` and all others increasing orders. Do not hand-author runtime SQL queries or duplicate the schema in a SQL statement array.
 
 - [ ] **Step 4: Run the test and migration**
 
