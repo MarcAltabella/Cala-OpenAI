@@ -25,7 +25,7 @@ export function CompanyPage({ companyId, onBack }: { companyId: string; onBack: 
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList><TabsTrigger value="runs">Agent runs</TabsTrigger><TabsTrigger value="outputs">Outputs</TabsTrigger></TabsList>
       <TabsContent value="runs" className="runs-flow-panel">
-        <AgentFlow companyId={companyId} onViewResults={() => setTab('outputs')} />
+        <AgentFlow companyId={companyId} initialRun={runs[0]} onViewResults={() => setTab('outputs')} />
       </TabsContent>
       <TabsContent value="outputs" className="output-document">
         <h2>{company.name} development report</h2>

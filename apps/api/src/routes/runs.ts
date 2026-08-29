@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { createRepositoriesFromEnv } from '@cala/db';
-import { listRunEvents } from '@cala/db/src/repositories/run-events.js';
+import { listRunEvents, listRunEventsPersisted } from '@cala/db/src/repositories/run-events.js';
+import { databaseEnabled } from '@cala/db/src/repositories/runs.js';
 
 export const runsRouter = Router();
 export let enqueueRun = (_runId: string): void => {};
@@ -22,5 +23,6 @@ runsRouter.get('/:id', async (req, res) => {
 });
 runsRouter.get('/:id/events', async (req, res) => {
   const run = await createRepositoriesFromEnv().runs.get(req.params.id);
-  return run ? res.json(listRunEvents(run.id)) : res.status(404).json({ error: 'run not found' });
+  if (!run) return res.status(404).json({ error: 'run not found' });
+  return res.json(databaseEnabled() ? await listRunEventsPersisted(run.id) : listRunEvents(run.id));
 });

@@ -26,15 +26,22 @@
     {
       "idx": 3,
       "version": "7",
-      "when": 1788018000000,
-      "tag": "0003_relationship_endpoints",
+      "when": 1788017000000,
+      "tag": "0003_fresh_run_events",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "7",
+      "when": 1788018000000,
+      "tag": "0004_relationship_endpoints",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
       "when": 1788021000000,
-      "tag": "0004_company_recency",
+      "tag": "0005_company_recency",
       "breakpoints": true
     }
   ]

@@ -1,6 +1,9 @@
 export type Company = { id: string; name: string; ticker: string | null; displayOrder: number; recency?: 'mid' | 'high' };
-export type Run = { id: string; companyId: string; status: 'completed' | 'running' | 'failed'; phase: string; healthcare: string; finance: string; updatedAt: string };
-export type RunEvent = { id: string; kind: 'phase' | 'tool_call' | 'tool_result' | 'error'; toolName?: string; summary: string; output?: string; createdAt: string };
+export type RunStatus = 'queued' | 'running' | 'completed' | 'failed';
+export type RunPhase = 'queued' | 'fanout' | 'relations' | 'healthcare_gate' | 'stopped' | 'finance' | 'completed' | 'failed';
+export type Run = { id: string; companyId: string | null; mode: 'seed' | 'delta'; status: RunStatus; phase: RunPhase; startedAt: string | null; finishedAt: string | null; error: string | null; counts: Record<string, number> };
+export type RunEvent = { id: string; runId?: string; phase: RunPhase; kind: 'phase' | 'tool_call' | 'tool_result' | 'error'; tool: string | null; summary: string | null; input?: Record<string, unknown>; output?: Record<string, unknown>; createdAt: string };
+export type QueuedRun = { id: string; status: 'queued' };
 export type GraphEntity = { id: string; entityType: string; label: string; sourceId: string | null };
 export type GraphRelationship = { id: string; fromEntityId: string; toEntityId: string; relationshipType: string; evidenceDocumentId: string | null };
 export type GraphNeighborhood = { nodes: GraphEntity[]; edges: GraphRelationship[] };
@@ -17,18 +20,38 @@ export type ServiceHealth = { status: 'ok' | 'degraded'; postgres: 'connected' |
 const companies: Company[] = [
   ['moderna', 'Moderna', 'MRNA'], ['pfizer', 'Pfizer', 'PFE'], ['eli-lilly', 'Eli Lilly', 'LLY'], ['jnj', 'Johnson & Johnson', 'JNJ'], ['roche', 'Roche', 'RHHBY'], ['abbvie', 'AbbVie', 'ABBV'], ['merck', 'Merck & Co.', 'MRK'], ['novartis', 'Novartis', 'NVS'], ['amgen', 'Amgen', 'AMGN'], ['sanofi', 'Sanofi', 'SNY']
 ].map(([id, name, ticker], displayOrder) => ({ id, name, ticker, displayOrder, recency: displayOrder % 2 === 0 ? 'high' : 'mid' }));
-const runs: Run[] = companies.map((c, i) => ({ id: `run-${c.id}`, companyId: c.id, status: i === 0 ? 'completed' : 'running', phase: i === 0 ? 'completed' : 'healthcare_gate', healthcare: i % 3 === 0 ? 'Positive' : 'Neutral', finance: i % 3 === 0 ? 'High' : 'Medium', updatedAt: 'May 12, 2025 9:41 AM' }));
-const events: RunEvent[] = ['search_news', 'search_clinical_trials', 'search_fda', 'search_pubmed'].map((toolName, i) => ({ id: toolName, kind: 'tool_result', toolName, summary: 'Results retrieved', output: 'Source records normalized and linked to the company graph.', createdAt: `09:4${i}:2${i} AM` }));
+const runs: Run[] = companies.map((c, i) => ({
+  id: `run-${c.id}`,
+  companyId: c.id,
+  mode: 'delta',
+  status: i === 0 ? 'completed' : 'running',
+  phase: i === 0 ? 'completed' : 'healthcare_gate',
+  startedAt: null,
+  finishedAt: null,
+  error: null,
+  counts: {},
+}));
 
-export async function listCompanies() { try { const response = await fetch('/companies'); if (response.ok) return await response.json() as Company[]; } catch {} return companies; }
-export async function listCompanyRuns(companyId: string) { try { const response = await fetch(`/companies/${companyId}/agent-runs`); if (response.ok) return await response.json() as Run[]; } catch {} return runs.filter((r) => r.companyId === companyId); }
-export async function getRunEvents(runId: string) { try { const response = await fetch(`/runs/${runId}/events`); if (response.ok) return await response.json() as RunEvent[]; } catch {} return events; }
+const API_BASE_URL = (((import.meta as ImportMeta & { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL) ?? '').replace(/\/$/, '');
+const apiUrl = (path: string) => `${API_BASE_URL}${path}`;
+
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(apiUrl(path), { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) } });
+  if (!response.ok) throw new Error(`Request failed (${response.status}) for ${path}`);
+  return response.json() as Promise<T>;
+}
 
 async function json<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(apiUrl(url));
   if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? `Request failed (${response.status})`);
   return response.json() as Promise<T>;
 }
+
+export async function listCompanies() { try { const response = await fetch(apiUrl('/companies')); if (response.ok) return await response.json() as Company[]; } catch {} return companies; }
+export async function listCompanyRuns(companyId: string) { try { const response = await fetch(apiUrl(`/companies/${companyId}/agent-runs`)); if (response.ok) return await response.json() as Run[]; } catch {} return runs.filter((r) => r.companyId === companyId); }
+export async function createAgentRun(companyId: string, mode: 'seed' | 'delta' = 'delta') { return requestJson<QueuedRun>('/runs', { method: 'POST', body: JSON.stringify({ companyId, mode }) }); }
+export async function getRun(runId: string) { return requestJson<Run>(`/runs/${encodeURIComponent(runId)}`); }
+export async function getRunEvents(runId: string) { return requestJson<RunEvent[]>(`/runs/${encodeURIComponent(runId)}/events`); }
 
 export async function getKnowledgeGraph(filters: {
   companyId?: string;
@@ -70,7 +93,7 @@ export type GraphSqlResult = {
 };
 
 export async function askGraphSql(question: string): Promise<GraphSqlResult> {
-  const response = await fetch('/knowledge-graph/sql', {
+  const response = await fetch(apiUrl('/knowledge-graph/sql'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ question }),

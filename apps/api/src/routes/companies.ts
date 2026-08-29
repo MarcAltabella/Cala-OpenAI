@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createRepositoriesFromEnv } from '@cala/db';
 import { listSourceDocuments } from '@cala/db/src/repositories/source-documents.js';
 import { listDevelopments } from '@cala/db/src/repositories/developments.js';
-import { listRuns } from '@cala/db/src/repositories/runs.js';
+import { databaseEnabled, listRuns, listRunsPersisted } from '@cala/db/src/repositories/runs.js';
 import { listPeopleForCompany } from '@cala/db/src/repositories/people.js';
 
 export const companiesRouter = Router();
@@ -16,9 +16,12 @@ companiesRouter.post('/', async (req, res) => {
 });
 companiesRouter.get('/:id', async (req, res) => {
   const company = await createRepositoriesFromEnv().companies.get(req.params.id);
-  return company ? res.json({ ...company, latestRun: listRuns(company.id)[0] ?? null }) : res.status(404).json({ error: 'company not found' });
+  const runs = databaseEnabled() ? await listRunsPersisted(req.params.id) : listRuns(req.params.id);
+  return company ? res.json({ ...company, latestRun: runs[0] ?? null }) : res.status(404).json({ error: 'company not found' });
 });
-companiesRouter.get('/:id/agent-runs', (req, res) => res.json(listRuns(req.params.id)));
+companiesRouter.get('/:id/agent-runs', async (req, res) =>
+  res.json(databaseEnabled() ? await listRunsPersisted(req.params.id) : listRuns(req.params.id)),
+);
 companiesRouter.get('/:id/timeline', (req, res) =>
   res.json(
     listSourceDocuments(req.params.id).map((document) => ({
