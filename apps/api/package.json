@@ -1,0 +1,1 @@
+{"name":"@cala/api","private":true,"type":"module","scripts":{"typecheck":"tsc --noEmit","test":"vitest run"},"dependencies":{"@cala/contracts":"workspace:*","@cala/db":"workspace:*","express":"^5.0.1"},"devDependencies":{"@types/express":"^5.0.0","vitest":"^2.1.5","typescript":"^5.6.3"}}
