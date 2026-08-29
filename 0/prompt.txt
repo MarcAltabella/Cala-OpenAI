@@ -1,0 +1,3 @@
+check that all the flows (all agents, db, cala, calls, etc. ) work including the tavily new thingy. 
+
+and the open all prs and merge if works

@@ -27,7 +27,7 @@
   "turn_id": "13bcb800172e",
   "checkpoint_transcript_start": 84,
   "transcript_lines_at_start": 84,
-  "compact_transcript_start": 26,
+  "compact_transcript_start": 25,
   "session_metrics": {
     "turn_count": 5
   },
