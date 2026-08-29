@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M178ZSV8XDG0NF36GYTV4WGF",
+  "session_id": "56f56ff8-eba6-4cb2-b814-d99f3dd1acee",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-29T17:27:29.474639Z",
+  "branch": "mauro/interactive-knowledge-graph",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "apps/web/src/lib/api.ts",
+    "apps/web/src/pages/CompaniesPage.tsx",
+    "apps/web/src/pages/CompanyPage.tsx"
+  ],
+  "agent": "Cursor",
+  "model": "auto-smart",
+  "turn_id": "c1551d5dcaa1",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 40742,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 248960,
+    "output_tokens": 5279,
+    "api_call_count": 1
+  },
+  "session_metrics": {
+    "duration_ms": 109123,
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-29T17:27:29.45886Z",
+    "agent_lines": 22,
+    "agent_removed": 24,
+    "human_added": 441,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 464,
+    "total_lines_changed": 597,
+    "agent_percentage": 7.705192629815745,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    }
+  ]
+}

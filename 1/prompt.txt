@@ -1,0 +1,1 @@
+connect again to postgre and ensure that w4e take tha data from neo and postgre bc i think is jardoceded the try.
