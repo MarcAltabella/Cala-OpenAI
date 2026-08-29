@@ -1,0 +1,3 @@
+modify the postgre such that the recency for all the companies are mid/high. 
+
+also harcode resuts for the sql CONVERSTION CHATBOT IN THE KNWOLEDGE GRAPH FOR MODERNA AND SOME CLININCAL TRIAL AND GIVE IT TO ME
