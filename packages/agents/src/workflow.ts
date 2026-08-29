@@ -125,7 +125,7 @@ export async function runIntelligenceWorkflow(runId: string, deps?: Partial<Work
   const run = await resolved.repos.runs.get(runId);
   if (!run) throw new Error(`run ${runId} not found`);
   const companyId = run.companyId ?? '';
-  const company = (await resolved.repos.companies.get(companyId)) ?? { id: companyId, name: companyId, ticker: null, displayOrder: 0, createdAt: new Date().toISOString() };
+  const company = (await resolved.repos.companies.get(companyId)) ?? { id: companyId, name: companyId, ticker: null, displayOrder: 0, recency: 'high', createdAt: new Date().toISOString() };
 
   await resolved.repos.runs.update(runId, { status: 'running', phase: 'fanout', startedAt: new Date().toISOString() });
 

@@ -6,7 +6,7 @@ import { createClinicalTrialsAdapter, parseClinicalTrials } from './clinical-tri
 import { createNewsAdapter, parseNews } from './news.js';
 import { createWebNewsAdapter, parseWebNews, webNewsQuery } from './web-news.js';
 
-const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, createdAt: '2026-01-01T00:00:00.000Z' };
+const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, recency: 'high', createdAt: '2026-01-01T00:00:00.000Z' };
 const load = (name: string): unknown => JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'));
 const okResponse = (payload: unknown) => ({ ok: true, status: 200, json: async () => payload, text: async () => '' });
 

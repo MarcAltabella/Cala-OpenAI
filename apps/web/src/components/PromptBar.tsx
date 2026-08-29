@@ -21,6 +21,8 @@ type PromptBarProps = {
   onSend?: (value: string) => void;
   variant?: 'Rounded' | 'Pill';
   demo?: boolean;
+  busy?: boolean;
+  hint?: string;
 };
 
 const SOURCES = [
@@ -35,7 +37,7 @@ const COMMANDS = [
   { label: 'Summarize evidence', value: '/summarize', icon: FileText },
 ];
 
-export function PromptBar({ placeholder = 'Ask predict anything…', onSend, variant = 'Rounded' }: PromptBarProps) {
+export function PromptBar({ placeholder = 'Ask predict anything…', onSend, variant = 'Rounded', busy = false, hint }: PromptBarProps) {
   const [value, setValue] = useState('');
   const [menu, setMenu] = useState<'source' | 'command' | 'model' | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
@@ -55,7 +57,7 @@ export function PromptBar({ placeholder = 'Ask predict anything…', onSend, var
   const activeItems = menu === 'source' ? SOURCES : menu === 'command' ? COMMANDS : [];
   const send = () => {
     const next = value.trim();
-    if (!next) return;
+    if (!next || busy) return;
     onSend?.(next);
     setValue('');
     setMenu(null);
@@ -112,10 +114,10 @@ export function PromptBar({ placeholder = 'Ask predict anything…', onSend, var
         <div className="promptbar-toolbar-right">
           <button aria-label="Dictate" className={`promptbar-icon ${listening ? 'is-listening' : ''}`} onClick={() => { setListening((current) => !current); setTimeout(() => setListening(false), 1600); }}><Mic size={15} /></button>
           <button aria-label="Add image" className="promptbar-icon"><Image size={15} /></button>
-          <button aria-label="Send prompt" className="promptbar-send" disabled={!value.trim()} onClick={send}>{listening ? <LoaderCircle className="promptbar-spin" size={15} /> : <Send size={15} />}</button>
+          <button aria-label="Send prompt" className="promptbar-send" disabled={!value.trim() || busy} onClick={send}>{listening || busy ? <LoaderCircle className="promptbar-spin" size={15} /> : <Send size={15} />}</button>
         </div>
       </div>
-      <div className="promptbar-hint"><AtSign size={11} /> sources <span>/</span> commands <kbd>Enter</kbd> to run</div>
+      <div className="promptbar-hint"><AtSign size={11} /> {hint ?? <>sources <span>/</span> commands</>} <kbd>Enter</kbd> to run</div>
     </div>
   );
 }

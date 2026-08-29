@@ -4,7 +4,7 @@ import { MockCalaClient } from './cala.js';
 import { MockFastinoClient, OpenAIFastinoClient, financeImpactSchema, healthcareGateSchema } from './fastino.js';
 import { StubChatModel } from './models.js';
 
-const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, createdAt: '2026-01-01T00:00:00.000Z' };
+const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, recency: 'high', createdAt: '2026-01-01T00:00:00.000Z' };
 const relationPack: RelationPack = { companyId: 'moderna', brief: 'Moderna develops mRNA-4157 with Merck', nodes: [], edges: [] };
 const cala = new MockCalaClient();
 

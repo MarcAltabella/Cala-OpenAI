@@ -1,9 +1,13 @@
 import type { GraphEntity, GraphRelationship } from '@cala/contracts';
 
 export type NeighborhoodInput = {
+  nodeId?: string;
   companyId?: string;
   personId?: string;
   institutionId?: string;
+  entityTypes?: string[];
+  relationshipTypes?: string[];
+  /** @deprecated Use relationshipTypes. */
   types?: string[];
   query?: string;
   limit?: number;
@@ -17,5 +21,6 @@ export interface GraphProjector {
   projectEntity(entity: GraphEntity): Promise<void>;
   projectRelationship(relationship: GraphRelationship): Promise<void>;
   neighborhood(input: NeighborhoodInput): Promise<Neighborhood>;
+  verifyConnectivity(): Promise<void>;
   close(): Promise<void>;
 }

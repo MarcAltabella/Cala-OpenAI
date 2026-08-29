@@ -49,10 +49,37 @@ export function createInMemoryRepositories(store: InMemoryStore = createInMemory
       async list() {
         return [...store.companies.values()].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
       },
+      async create(input) {
+        const company: Company = {
+          id: randomUUID(),
+          name: input.name,
+          ticker: input.ticker,
+          displayOrder: store.companies.size,
+          recency: store.companies.size % 2 === 0 ? 'high' : 'mid',
+          createdAt: new Date().toISOString(),
+        };
+        store.companies.set(company.id, company);
+        return company;
+      },
     },
     runs: {
       async get(id) {
         return store.runs.get(id);
+      },
+      async create(input) {
+        const run: AgentRun = {
+          id: randomUUID(),
+          companyId: input.companyId ?? null,
+          mode: input.mode,
+          status: 'queued',
+          phase: 'queued',
+          startedAt: null,
+          finishedAt: null,
+          error: null,
+          counts: { calaHealthcare: 0, documents: 0, gate: 0, finance: 0 },
+        };
+        store.runs.set(run.id, run);
+        return run;
       },
       async update(id, patch) {
         const run = store.runs.get(id);
@@ -89,9 +116,11 @@ export function createInMemoryRepositories(store: InMemoryStore = createInMemory
     },
     entities: {
       async upsert(input) {
-        const key = `${input.entityType}:${input.label}`;
+        const key = `${input.entityType}:${input.externalId ?? input.label}`;
         for (const existing of store.entities.values()) {
-          if (`${existing.entityType}:${existing.label}` === key) return { record: existing, isNew: false };
+          if (`${existing.entityType}:${existing.label}` === key || `${existing.entityType}:${existing.label}` === `${input.entityType}:${input.label}`) {
+            return { record: existing, isNew: false };
+          }
         }
         const record: GraphEntity = { id: randomUUID(), entityType: input.entityType, label: input.label, sourceId: input.sourceId ?? null };
         store.entities.set(record.id, record);

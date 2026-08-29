@@ -9,7 +9,7 @@ import { runResearch } from './research.js';
 import { buildRelationPack } from './relations.js';
 import type { ResearchTool } from './tools.js';
 
-const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, createdAt: '2026-01-01T00:00:00.000Z' };
+const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, recency: 'high', createdAt: '2026-01-01T00:00:00.000Z' };
 
 function paperDoc(id: string): NormalizedDocument {
   return { provider: 'pubmed', providerId: id, companyId: company.id, url: `https://pubmed/${id}`, publishedAt: null, title: `Paper ${id}`, text: `text ${id}`, rawPayload: {}, contentHash: `h${id}`, documentKind: 'paper' };
