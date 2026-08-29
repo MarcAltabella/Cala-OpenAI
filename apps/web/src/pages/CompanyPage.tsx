@@ -24,8 +24,8 @@ export function CompanyPage({ companyId, onBack }: { companyId: string; onBack: 
     <header className="page-header company-page-header"><div><h1>{company.name}</h1><p>{company.ticker} · company intelligence workspace</p></div></header>
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList><TabsTrigger value="runs">Agent runs</TabsTrigger><TabsTrigger value="outputs">Outputs</TabsTrigger></TabsList>
-      <TabsContent value="runs" className="runs-layout runs-flow-panel">
-        <AgentFlow onViewResults={() => setTab('outputs')} />
+      <TabsContent value="runs" className="runs-flow-panel">
+        <AgentFlow companyId={companyId} onViewResults={() => setTab('outputs')} />
       </TabsContent>
       <TabsContent value="outputs" className="output-document">
         <h2>{company.name} development report</h2>
