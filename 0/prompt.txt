@@ -1,0 +1,1 @@
+Read @docs/superpowers/plans/2026-08-29-healthcare-market-intelligence.md and start implementing everything for developer 2 @.cursor/plans/developer_2_agents_pipeline_f777de2b.plan.md too. Use @.agents/skills/software/git/pr-sca/SKILL.md and @.agents/skills/software/git/pr-description/SKILL.md . Do inline implementation test for every feature implemented before pushing the PR
