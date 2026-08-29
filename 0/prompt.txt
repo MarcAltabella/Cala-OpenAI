@@ -1,0 +1,421 @@
+<external_links>
+### Potentially Relevant Websearch Results
+
+You should respond as if these information are known to you. Refrain from saying "I am unable to browse the internet" or "I don't have access to the internet" or "I'm unable to provide real-time news updates". This is your internet search results. Please always cite any links you referenced from the above search results in your response in markdown format.
+
+-------
+Website URL: https://huggingface.co/fastino/Fastino-Nemotron-3.5-Lightning-Healthcare
+Website Title: fastino/Fastino-Nemotron-3.5-Lightning-Healthcare · Hugging Face
+Website Content:
+Hugging Face's logo Hugging Face 
+
+* Models
+* Datasets
+* Spaces
+* Buckets new
+* Docs
+* Enterprise
+* Pricing
+* * Website  
+         * Tasks  
+         * HuggingChat  
+         * Collections  
+         * Languages  
+         * Organizations  
+   * Community  
+         * Blog  
+         * Posts  
+         * Daily Papers  
+         * Hardware  
+         * Learn  
+         * Discord  
+         * Forum  
+         * GitHub  
+   * Solutions  
+         * Team & Enterprise  
+         * Hugging Face PRO  
+         * Enterprise Support  
+         * Inference Providers  
+         * Inference Endpoints  
+         * Storage Buckets
+* ---
+* Log In
+* Sign Up
+
+# 
+
+fastino 
+
+/
+
+Fastino-Nemotron-3.5-Lightning-Healthcare 
+
+like 18
+
+Follow
+
+fastino 275
+
+Text Generation Transformers Safetensors English nemotron\_h healthcare clinical medical-reasoning information-extraction fine-tuned nemotron lightning mixture-of-experts conversational custom\_code 
+
+arxiv: 2604.09791 
+
+License: apache-2.0 
+
+Model card Files Files and versions xet Community 2 
+
+ Deploy 
+
+ Copy to bucket new 
+
+ Use this model 
+
+### Instructions to use fastino/Fastino-Nemotron-3.5-Lightning-Healthcare with libraries, inference providers, notebooks, and local apps. Follow these links to get started.
+
+* Libraries
+* Transformers  
+How to use fastino/Fastino-Nemotron-3.5-Lightning-Healthcare with Transformers:  
+# Use a pipeline as a high-level helper  
+from transformers import pipeline  
+pipe = pipeline("text-generation", model="fastino/Fastino-Nemotron-3.5-Lightning-Healthcare", trust_remote_code=True)  
+messages = [  
+    {"role": "user", "content": "Who are you?"},  
+]  
+pipe(messages)  
+# Load model directly  
+from transformers import AutoTokenizer, AutoModelForCausalLM  
+tokenizer = AutoTokenizer.from_pretrained("fastino/Fastino-Nemotron-3.5-Lightning-Healthcare", trust_remote_code=True)  
+model = AutoModelForCausalLM.from_pretrained("fastino/Fastino-Nemotron-3.5-Lightning-Healthcare", trust_remote_code=True, device_map="auto")  
+messages = [  
+    {"role": "user", "content": "Who are you?"},  
+]  
+inputs = tokenizer.apply_chat_template(  
+	messages,  
+	add_generation_prompt=True,  
+	tokenize=True,  
+	return_dict=True,  
+	return_tensors="pt",  
+).to(model.device)  
+outputs = model.generate(**inputs, max_new_tokens=40)  
+print(tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:]))
+* Notebooks
+* Google Colab
+* Kaggle
+* Local Apps Settings
+* vLLM  
+How to use fastino/Fastino-Nemotron-3.5-Lightning-Healthcare with vLLM:  
+##### Install from pip and serve model  
+# Install vLLM from pip:  
+pip install vllm  
+# Start the vLLM server:  
+vllm serve "fastino/Fastino-Nemotron-3.5-Lightning-Healthcare"  
+# Call the server using curl (OpenAI-compatible API):  
+curl -X POST "http://localhost:8000/v1/chat/completions" \  
+	-H "Content-Type: application/json" \  
+	--data '{  
+		"model": "fastino/Fastino-Nemotron-3.5-Lightning-Healthcare",  
+		"messages": [  
+			{  
+				"role": "user",  
+				"content": "What is the capital of France?"  
+			}  
+		]  
+	}'  
+##### Use Docker  
+docker model run hf.co/fastino/Fastino-Nemotron-3.5-Lightning-Healthcare
+* SGLang  
+How to use fastino/Fastino-Nemotron-3.5-Lightning-Healthcare with SGLang:  
+##### Install from pip and serve model  
+# Install SGLang from pip:  
+pip install sglang  
+# Start the SGLang server:  
+python3 -m sglang.launch_server \  
+    --model-path "fastino/Fastino-Nemotron-3.5-Lightning-Healthcare" \  
+    --host 0.0.0.0 \  
+    --port 30000  
+# Call the server using curl (OpenAI-compatible API):  
+curl -X POST "http://localhost:30000/v1/chat/completions" \  
+	-H "Content-Type: application/json" \  
+	--data '{  
+		"model": "fastino/Fastino-Nemotron-3.5-Lightning-Healthcare",  
+		"messages": [  
+			{  
+				"role": "user",  
+				"content": "What is the capital of France?"  
+			}  
+		]  
+	}'  
+##### Use Docker images  
+docker run --gpus all \  
+    --shm-size 32g \  
+    -p 30000:30000 \  
+    -v ~/.cache/huggingface:/root/.cache/huggingface \  
+    --env "HF_TOKEN=<secret>" \  
+    --ipc=host \  
+    lmsysorg/sglang:latest \  
+    python3 -m sglang.launch_server \  
+        --model-path "fastino/Fastino-Nemotron-3.5-Lightning-Healthcare" \  
+        --host 0.0.0.0 \  
+        --port 30000  
+# Call the server using curl (OpenAI-compatible API):  
+curl -X POST "http://localhost:30000/v1/chat/completions" \  
+	-H "Content-Type: application/json" \  
+	--data '{  
+		"model": "fastino/Fastino-Nemotron-3.5-Lightning-Healthcare",  
+		"messages": [  
+			{  
+				"role": "user",  
+				"content": "What is the capital of France?"  
+			}  
+		]  
+	}'
+* Docker Model Runner  
+How to use fastino/Fastino-Nemotron-3.5-Lightning-Healthcare with Docker Model Runner:  
+docker model run hf.co/fastino/Fastino-Nemotron-3.5-Lightning-Healthcare
+* Browse Quantizations to use this model in  llama.cpp,  Ollama,  LM Studio, or any compatible app.
+
+* Fastino Nemotron 3.5 Lightning Healthcare  
+   * What it is designed for  
+   * Quickstart  
+   * Post-training recipe  
+   * Benchmark evaluation  
+         * In-domain benchmarks  
+         * Transfer to unseen benchmarks  
+   * Evaluation protocol  
+   * Limitations  
+   * Citation  
+   * License  
+   * Links
+
+Fine-tune with Fastino arXiv Paper Base model Follow @fastinoAI
+
+#  Fastino Nemotron 3.5 Lightning Healthcare 
+
+`Fastino-Nemotron-3.5-Lightning-Healthcare` is a 30B-parameter, 3B-active mixture-of-experts model specialized for healthcare and biomedical applications. The repository contains a ready-to-run merged checkpoint: the NVIDIA Nemotron 3.5 Lightning checkpoint released July 29, 2026 plus Fastino's winning combined-healthcare E17b adapter. Users do not need to obtain or attach a separate LoRA.
+
+* **Developed by:** Fastino Labs, in collaboration with NVIDIA
+* **Base checkpoint:** NVIDIA Nemotron 3.5 Lightning, July 29, 2026 release
+* **Post-training checkpoint:** Fastino-Healthcare
+* **License:** Apache 2.0
+* **Language:** English
+* **Modalities:** Text
+* **Model Release Blog:** Release Blog
+* **Fine-Tuning Agent:** Private Preview
+* **Research:** Fastino Fine-Tuning Agent
+
+##  What it is designed for 
+
+The model targets clinical and health conversation, biomedical question answering, clinical calculation, medical error detection and correction, biomedical concept extraction, clinical note summarization, and tool-using clinical administration and medical-agent tasks.
+
+##  Quickstart 
+
+The published weights are BF16 and require about 66 GB before runtime overhead. An 80 GB or larger GPU, or tensor parallelism across multiple GPUs, is recommended.
+
+```bash
+pip install "vllm==0.23.0"
+
+```
+
+```python
+from vllm import LLM, SamplingParams
+
+model_id = "fastino/Fastino-Nemotron-3.5-Lightning-Healthcare"
+
+llm = LLM(
+    model=model_id,
+    trust_remote_code=True,
+    dtype="bfloat16",
+    max_model_len=4096,
+)
+
+clinical_note = """65-year-old male with history of hypertension, type 2
+diabetes, and CKD stage 3 presents with 2 weeks of progressive dyspnea on
+exertion and orthopnea. Exam: bibasilar crackles, 3+ pitting edema to knees,
+BP 152/94. Meds: lisinopril 20 mg daily, furosemide 40 mg daily. CXR:
+cardiomegaly with pulmonary congestion. Assessment: acute decompensated
+heart failure."""
+
+messages = [
+    {
+        "role": "system",
+        "content": "You are a clinical documentation assistant. Summarize notes accurately and concisely. Do not add information that is not in the note.",
+    },
+    {
+        "role": "user",
+        "content": f"Summarize the following clinical note in 3-5 bullet points:\n\n{clinical_note}",
+    },
+]
+
+outputs = llm.chat(
+    messages,
+    SamplingParams(temperature=0.0, max_tokens=512),
+)
+print(outputs[0].outputs[0].text)
+
+```
+
+##  Post-training recipe 
+
+The Fastino Fine-Tuning Agent autonomously built evaluation sets, curated data, explored training mixtures and hyperparameters, recovered failed experiments, evaluated transfer, and selected the final checkpoint.
+
+The winning adapter was trained on 72,358 de-duplicated examples covering:
+
+* general healthcare instruction following and physician-style health conversations;
+* biomedical question answering and clinical calculation;
+* medical error detection and correction;
+* clinical dialogue summarization and note generation;
+* biomedical concept, chemical, and disease extraction;
+* clinical administration and browser-based tool-use trajectories; and
+* medical-agent task trajectories.
+
+The final balanced mixture modestly upweighted difficult HealthBench-style examples while preserving broad healthcare, biomedical extraction, and newer agent-task coverage. It was trained from the base checkpoint for two epochs with LoRA rank 64, learning rate `1.5e-4`, batch size 32, and sequence packing disabled. Evaluation, development, and blind rows and their labels were excluded from training.
+
+##  Benchmark evaluation 
+
+Base and fine-tuned scores below use the same July 29 checkpoint, inputs, prompts, decoding settings, inference route, and evaluator for each row.
+
+###  In-domain benchmarks 
+
+| Benchmark                         | Evaluation scope | July 29 base | Fastino-Healthcare | Change    |
+| --------------------------------- | ---------------- | ------------ | ------------------ | --------- |
+| HealthBench Pro                   | blind, n=180     | 26.83%       | 32.64%             | +5.80 pp  |
+| HealthAdminBench                  | blind            | 25.67%       | 29.95%             | +4.28 pp  |
+| MedAgent public v1/v2, Overall SR | blind, n=150     | 36.00%       | 40.00%             | +4.00 pp  |
+| HealthBench Core                  | blind, n=700     | 49.67%       | 56.21%             | +6.54 pp  |
+| PubMedQA                          | matched, n=500   | 59.00%       | 65.00%             | +6.00 pp  |
+| MedCalc                           | matched, n=275   | 49.09%       | 54.18%             | +5.09 pp  |
+| MEDEC, flag accuracy              | matched, n=574   | 53.66%       | 64.98%             | +11.32 pp |
+| MEDEC, sentence accuracy          | matched, n=574   | 48.08%       | 62.89%             | +14.81 pp |
+| MedMentions ST21pv                | matched, n=878   | 19.74%       | 40.30%             | +20.55 pp |
+| BC5CDR                            | matched, n=500   | 47.92%       | 72.51%             | +24.59 pp |
+
+HealthAdminBench used Task Description plus Portal Guidance with the accessibility-tree observation mode. MedAgent reports Overall Success Rate. MEDEC flag and sentence accuracy are reported separately.
+
+###  Transfer to unseen benchmarks 
+
+Performance on related tasks the model was not explicitly trained for.
+
+| Benchmark        | Evaluation scope  | July 29 base | Fastino-Healthcare | Change    |
+| ---------------- | ----------------- | ------------ | ------------------ | --------- |
+| EkaCare          | transfer, n=1,066 | 12.95%       | 32.83%             | +19.88 pp |
+| BC5CDR to BioRED | transfer, n=66    | 25.92%       | 41.77%             | +15.85 pp |
+
+##  Evaluation protocol 
+
+The agent used development evaluations for experiment selection and a separately frozen blind lane for final characterization. Score-bearing comparisons were accepted only when base and candidate shared the same examples, prompt construction, decoding parameters, serving route, evaluator identity, and aggregation. Training mixtures were hashed and benchmark evaluation rows were excluded from training.
+
+##  Limitations 
+
+This is a specialized research model, not a medical device. Its outputs are not a substitute for professional clinical judgment. Clinical or other high-stakes deployment requires independent validation, appropriate safeguards, and qualified human oversight.
+
+##  Citation 
+
+```bibtex
+@misc{atreja2026pioneeragentcontinualimprovement,
+      title={Pioneer Agent: Continual Improvement of Small Language Models in Production},
+      author={Dhruv Atreja and Julia White and Nikhil Nayak and Kelton Zhang and Henrijs Princis and George Hurn-Maloney and Ash Lewis and Urchade Zaratiana},
+      year={2026},
+      eprint={2604.09791},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2604.09791},
+}
+
+```
+
+##  License 
+
+This model is licensed under the Apache License 2.0.
+
+##  Links 
+
+* Fastino Labs
+* Fine-Tuning Agent private preview
+* Supporting research
+* NVIDIA Nemotron 3.5 Lightning base model
+
+Downloads last month
+
+18,162
+
+Safetensors
+
+Model size
+
+32B params
+
+Tensor type
+
+F32 
+
+·
+
+BF16 
+
+·
+
+Chat template
+
+Files info
+
+Inference Providers NEW
+
+Text Generation
+
+This model isn't deployed by any Inference Provider. 🙋 Ask for provider support
+
+##  Model tree for fastino/Fastino-Nemotron-3.5-Lightning-Healthcare 
+
+Quantizations
+
+4 models
+
+##  Paper for fastino/Fastino-Nemotron-3.5-Lightning-Healthcare
+
+Pioneer Agent: Continual Improvement of Small Language Models in Production  Paper • 2604.09791 • Published Apr 10 •  14 
+
+ System theme 
+
+Company
+
+TOS Privacy About Careers 
+
+Website
+
+Models Datasets Spaces Pricing Docs
+____
+
+</external_links>
+<manually_attached_skills>
+The user has manually attached the following skills to their message.
+These skills contain specific instructions or workflows that the user wants you to follow for this request.
+Only read the files if needed, the full skill content is inlined here.
+
+Skill Name: pr-description
+Path: /Users/mauro/personal_project/cala-openai/.agents/skills/software/git/pr-description/SKILL.md
+SKILL.md content:
+Use when creating a commit, opening a PR, editing its title or body, generating a PR with a CLI, or deciding what belongs in a PR description.
+
+Use an imperative conventional title: `<type>(<optional scope>): <concise outcome>`. Keep the subject lowercase. Valid types include `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`, `build`, `ci`, and `revert`.
+
+Use this body structure:
+
+```markdown
+## What
+
+- <past-tense shipped outcome>
+
+## Why
+
+- <problem, decision, incident, or business reason>
+```
+
+Describe outcomes rather than files, functions, or implementation details. Add `## Breaking` immediately before `## Why` when compatibility or required actions change. Apply the active project's branch convention when validating the PR head.
+</manually_attached_skills>
+<timestamp>Saturday, Aug 29, 2026, 2:49 PM (UTC+2)</timestamp>
+
+we are going to create the architecture form the beginning (not the backend just agents and data extraction):
+
+post request to the /runs endpoint then this will do 2 things in parallel 1. query to cala to extract healthcare info about company and 2. agent to extrct updated info (still we need to define which tools) to store it in in PostgreSQL and neo4j knowledge-graph from planning. then an agent extracts the relation from this company from knowledge-graph (PostgreSQL and neo4j) and goes to fastino (healthcare llm specialized agent from hugging face api call https://huggingface.co/fastino/Fastino-Nemotron-3.5-Lightning-Healthcare ) if the LLM considers the information extracted from the 'research agent' is new and relevant to the company then we trigger a second process. Otherwise we stop. This second process will do a request to a cala finance endpoint, and retrieve the financial information about that company and how this new development/research update can inpact in the future. E.g. they could release a vaccine because XYZ. The Finanance LLM from fastino will analyze this data and provide a structurated output about how the research discovery could impact the financials of the company in the future.
+
+Update developer 2 and developer 1 if needed. Read /pr-description and push the PR with the changes. For the agents we will be using OpenAI models, embeddings, LLM, etc...
