@@ -1,0 +1,24 @@
+use "entire doctor" to see issues and ensure that session can be seen in the entire website
+
+---
+
+i would like to impleemnt somehow that some in the healthcare phase of the architecture has access to web search in order to look for relevant news, which is the best approach we could implement
+
+---
+
+read the actual repository and prepare this:
+
+What to implement
+New ingestion adapter, e.g. packages/ingestion/src/sources/web-news.ts (provider: 'web_news'), returning the same NormalizedDocument shape as RSS news.
+Wire it in defaultResearchTools() next to PubMed / trials / news (same failure isolation as today).
+Use a search API, not scraping: Tavily or Exa (agent-friendly), or Brave/Serper. Query like "${company.name}" OR ${ticker} (trial OR FDA OR vaccine OR partnership) with since for delta runs.
+Persist title + snippet + URL only (matches “no paywalled body scrape”).
+Keep existing RSS/NEWS_FEED_URL for IR; web search fills the open-web gap.
+
+also modify the context files such as planning and healthcare market intellingence .md to update with the implementation we made and the new one of the websearch for context for other branches agents of what we have done so far.
+
+---
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.

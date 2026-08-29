@@ -1,0 +1,114 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M16ZA81N5KBSBJFRX2ETAHQ7",
+  "session_id": "a212b1df-e153-40c8-8255-3d505987f4c6",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-29T14:38:25.636831Z",
+  "branch": "mauro/dev2-agents-pipeline",
+  "checkpoints_count": 4,
+  "save_step_count": 4,
+  "files_touched": [
+    ".env.example",
+    "docs/superpowers/plans/2026-08-29-healthcare-market-intelligence.md",
+    "packages/agents/src/tools.ts",
+    "packages/ingestion/src/index.ts",
+    "packages/ingestion/src/normalize.test.ts",
+    "packages/ingestion/src/normalize.ts",
+    "packages/ingestion/src/sources/adapters.test.ts",
+    "packages/ingestion/src/sources/fixtures/web-news.json",
+    "packages/ingestion/src/sources/pubmed.ts",
+    "packages/ingestion/src/sources/web-news.ts",
+    "packages/ingestion/src/types.ts",
+    "planning.md",
+    "scripts/run-moderna.ts"
+  ],
+  "agent": "Cursor",
+  "model": "auto-smart",
+  "turn_id": "165f106e7b1c",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 558920,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2956928,
+    "output_tokens": 25813,
+    "api_call_count": 4
+  },
+  "session_metrics": {
+    "turn_count": 4
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-29T14:38:25.622101Z",
+    "agent_lines": 217,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 3,
+    "human_removed": 36,
+    "total_committed": 220,
+    "total_lines_changed": 257,
+    "agent_percentage": 84.43579766536965,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 143,
+      "user_lines_removed": 17,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40,
+        ".cursor/plans/developer_2_agents_pipeline_f777de2b.plan.md": 103
+      },
+      "user_removed_per_file": {
+        ".env.example": 17
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 143,
+      "user_lines_removed": 0,
+      "agent_lines_added": 31,
+      "agent_lines_removed": 20,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40,
+        ".cursor/plans/developer_2_agents_pipeline_f777de2b.plan.md": 103
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 143,
+      "user_lines_removed": 0,
+      "agent_lines_added": 31,
+      "agent_lines_removed": 20,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40,
+        ".cursor/plans/developer_2_agents_pipeline_f777de2b.plan.md": 103
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 143,
+      "user_lines_removed": 0,
+      "agent_lines_added": 31,
+      "agent_lines_removed": 20,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40,
+        ".cursor/plans/developer_2_agents_pipeline_f777de2b.plan.md": 103
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 145,
+      "user_lines_removed": 20,
+      "agent_lines_added": 256,
+      "agent_lines_removed": 32,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40,
+        ".cursor/plans/developer_2_agents_pipeline_f777de2b.plan.md": 105
+      },
+      "user_removed_per_file": {
+        ".env.example": 20
+      }
+    }
+  ]
+}
