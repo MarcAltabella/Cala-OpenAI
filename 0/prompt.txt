@@ -1,0 +1,1 @@
+i disabled the connection from the extension place in the cli of cursor, check if are working, already did aws sso login
