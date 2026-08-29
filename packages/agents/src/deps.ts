@@ -1,6 +1,7 @@
 import type { Company } from '@cala/contracts';
 import { createInMemoryRepositories, createInMemoryStore, type Repositories } from '@cala/db';
-import { getRun, updateRun } from '@cala/db/src/repositories/runs.js';
+import { databaseEnabled as companiesDatabaseEnabled, getCompanyPersisted, listCompaniesPersisted } from '@cala/db/src/repositories/companies.js';
+import { databaseEnabled, getRun, getRunPersisted, updateRun, updateRunPersisted } from '@cala/db/src/repositories/runs.js';
 import { createGraphFromEnv, type GraphProjector } from '@cala/graph';
 import { HttpCalaClient, type CalaClient } from './cala.js';
 import { OpenAIFastinoClient, type FastinoClient } from './fastino.js';
@@ -26,12 +27,16 @@ function createWorkerRepositories(seed?: { companies?: Company[] }): Repositorie
   const store = createInMemoryRepositories(seed?.companies ? createSeededStore(seed.companies) : undefined);
   return {
     ...store,
+    companies: companiesDatabaseEnabled() ? {
+      async get(id) { return getCompanyPersisted(id); },
+      async list() { return listCompaniesPersisted(); },
+    } : store.companies,
     runs: {
       async get(id) {
-        return getRun(id);
+        return databaseEnabled() ? getRunPersisted(id) : getRun(id);
       },
       async update(id, patch) {
-        return updateRun(id, patch);
+        return databaseEnabled() ? updateRunPersisted(id, patch) : updateRun(id, patch);
       },
     },
   };
