@@ -2,7 +2,7 @@
 
 ## Project
 
-Build a local-first intelligence dashboard for ten healthcare and biotech companies, with Moderna as the primary demo narrative. The system monitors research, clinical, regulatory, disclosure, and company-news sources; identifies meaningful healthcare developments; retrieves relevant multi-year market history from Cala; and produces evidence-backed market-impact findings and a cross-company daily report.
+Build a local-first intelligence dashboard with an unlimited company watchlist, seeded with ten healthcare and biotech companies for the demo and with Moderna as the primary narrative. The system monitors research, clinical, regulatory, disclosure, and company-news sources; identifies meaningful healthcare developments; retrieves relevant multi-year market history from Cala; and produces evidence-backed market-impact findings and a cross-company daily report.
 
 The demo flow is:
 
@@ -17,7 +17,7 @@ The demo flow is:
 
 ### Companies and sources
 
-- Track ten seeded healthcare/biotech companies, including Moderna.
+- Support an unlimited company watchlist; seed ten healthcare/biotech companies, including Moderna, for the demo.
 - Seed each source with the prior 12 months of research and regulatory material.
 - In daily mode, fetch and process only new or changed material.
 - Use live external APIs and feeds:
@@ -131,7 +131,7 @@ Docker Compose
 └── worker    # LangGraph / TypeScript
 ```
 
-The React/Vite frontend runs locally during development and may later be built into the API container. `.env` holds provider keys, model endpoints, source configuration, and the relevance threshold. No Supabase, Redis, cloud scheduler, hosted PostgreSQL provider, or authentication provider is in MVP scope.
+The React/Vite frontend uses Tailwind CSS and native React/HTML components for the dashboard. React Flow is the sole UI library in the MVP, used only for the knowledge graph; introduce other UI/dashboard libraries later when a concrete need appears. The frontend runs locally during development and may later be built into the API container. `.env` holds provider keys, model endpoints, source configuration, and the relevance threshold. No Supabase, Redis, cloud scheduler, hosted PostgreSQL provider, or authentication provider is in MVP scope.
 
 ## Non-goals and upgrade triggers
 
