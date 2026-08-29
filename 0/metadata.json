@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M179V62DQCZHKDS5NFXXVNXS",
+  "session_id": "2b8c5837-ef28-4ac2-a960-4469e9b03096",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-29T17:42:26.416286Z",
+  "branch": "mauro/interactive-knowledge-graph",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/src/components/AgentFlow.css",
+    "apps/web/src/components/AgentFlow.tsx",
+    "apps/web/src/vite-env.d.ts"
+  ],
+  "agent": "Cursor",
+  "model": "cursor-grok-4.6-medium-fast",
+  "turn_id": "10d2c7ec1641",
+  "checkpoint_transcript_start": 52,
+  "transcript_lines_at_start": 52,
+  "compact_transcript_start": 12,
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-29T17:42:26.398615Z",
+    "agent_lines": 82,
+    "agent_removed": 81,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 82,
+    "total_lines_changed": 163,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
