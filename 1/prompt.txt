@@ -1,0 +1,45 @@
+what are entities in the context of what we built?
+
+---
+
+wherer is the data from postgres being stored? and from neo4j?
+
+---
+
+given the data we already have (explain as we already seed data) give recommendation of what data should appear in this knowledge graph. m
+
+---
+
+imagine that the postgre and neo4j has already been populated with the 20 companies, how could be the graph with colors, descriptions, enitties and connections from colors, etc.
+
+---
+
+imagine that the postgre and neo4j has already been populated with the 20 companies, how could be the graph with colors, descriptions, enitties and connections from colors, etc.
+
+---
+
+1. A concrete Moderna scene (after seed + one run)
+                    [paper, sage]
+                   mRNA-4157 + pembro
+                          │ RESEARCH_ON
+                          ▼
+[news, amber] ──REPORTED_ON──► [Moderna, teal, large] ◄──TRIAL_BY── [trial, blue]
+Melanoma recurrence cut                              NCT03897881
+                          ▲
+                          │ COLLABORATES_WITH
+                    [Merck, teal, smaller]
+Optional: mRNA-4157 in the middle, all three evidence nodes also ABOUT it.
+
+
+
+2. show all companies and relations between every node don't limitate anything. the filter can be selecting all companies
+
+3. delete the white pads from the laterals
+
+4. implement a model agent ot create sql queries in the comany chatbox in the knowledge graph. 
+
+any questions?
+
+---
+
+the tab from above is cutted, move the filters to another place and ensure that is not trimmed anything.

@@ -3,7 +3,7 @@
   "checkpoint_id": "01M176SZ58PWR3196ZV3NXTQ3N",
   "strategy": "manual-commit",
   "branch": "mauro/interactive-knowledge-graph",
-  "checkpoints_count": 15,
+  "checkpoints_count": 22,
   "files_touched": [
     "apps/api/src/app.ts",
     "apps/api/src/routes/companies.test.ts",
@@ -67,13 +67,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 697883,
+    "input_tokens": 993755,
     "cache_creation_tokens": 364324,
-    "cache_read_tokens": 20022836,
-    "output_tokens": 96563,
-    "api_call_count": 10
+    "cache_read_tokens": 21433652,
+    "output_tokens": 110707,
+    "api_call_count": 16
   }
 }
