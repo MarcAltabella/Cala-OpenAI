@@ -5,6 +5,7 @@ export type NeighborhoodInput = {
   personId?: string;
   institutionId?: string;
   types?: string[];
+  query?: string;
   limit?: number;
 };
 

@@ -10,5 +10,6 @@ knowledgeGraphRouter.get('/', async (req, res) => {
     types,
     personId: typeof req.query.personId === 'string' ? req.query.personId : undefined,
     institutionId: typeof req.query.institutionId === 'string' ? req.query.institutionId : undefined,
+    query: typeof req.query.query === 'string' ? req.query.query : undefined,
   }));
 });

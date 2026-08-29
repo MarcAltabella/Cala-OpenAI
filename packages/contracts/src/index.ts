@@ -1,6 +1,6 @@
 export type Company = { id: string; name: string; ticker: string | null; displayOrder: number; createdAt: string };
 export type EntityType = 'company' | 'person' | 'institution' | 'paper' | 'patent' | 'clinical_trial' | 'news';
-export type Entity = { id: string; type: EntityType; externalId: string | null; label: string; properties: Record<string, unknown> };
+export type Entity = { id: string; type: EntityType; externalId: string | null; label: string; properties: Record<string, unknown>; sourceId?: string | null };
 export type Person = Entity & { type: 'person' }; export type Institution = Entity & { type: 'institution' };
 export type SourceDocument = { id: string; companyId: string | null; provider: string; providerId: string; url: string | null; publishedAt: string | null; rawPayload: unknown; normalizedText: string; contentHash: string; createdAt: string };
 export type Relationship = { id: string; type: string; fromEntityId: string; toEntityId: string; sourceDocumentId: string | null; evidenceUrl: string | null; confidence: number };
@@ -14,6 +14,7 @@ export type GraphEntity = { id: string; entityType: string; label: string; sourc
 export type GraphRelationship = { id: string; fromEntityId: string; toEntityId: string; relationshipType: string; evidenceDocumentId: string | null };
 export type RunInput = { companyId?: string; mode: 'seed' | 'delta' };
 export type MomentumReport = { companyId: string; thesis: string; events: Array<{ entityId: string; summary: string; occurredAt: string }>; generatedAt: string };
+export type RunEvent = { id: string; runId: string; phase: AgentRunPhase; kind: 'phase' | 'tool_call' | 'tool_result' | 'error'; tool: string | null; input?: Record<string, unknown>; output?: Record<string, unknown>; summary: string | null; createdAt: string };
 
 // Cala knowledge-query snapshots (see POST https://api.cala.ai/v1/knowledge/query)
 export type CalaEntity = { id: string; entityType: string; name: string; mentions: string[] };
