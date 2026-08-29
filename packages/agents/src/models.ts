@@ -37,7 +37,8 @@ export function createOpenAIClient(options: OpenAIClientOptions = {}): OpenAICli
       async complete(input: ChatInput): Promise<string> {
         const response = await client.chat.completions.create({
           model: chatModel,
-          temperature: input.temperature ?? 0,
+          // GPT-5.6 Luna only accepts its default temperature.
+          ...(chatModel === 'gpt-5.6-luna' ? {} : { temperature: input.temperature ?? 0 }),
           messages: [
             ...(input.system ? [{ role: 'system' as const, content: input.system }] : []),
             { role: 'user' as const, content: input.user },
