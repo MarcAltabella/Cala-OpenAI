@@ -1,0 +1,17 @@
+{
+  "result": {
+    "uids": ["37000001", "37000002"],
+    "37000001": {
+      "uid": "37000001",
+      "title": "An mRNA-4157 neoantigen vaccine plus pembrolizumab in resected melanoma",
+      "pubdate": "2023 Jul 15",
+      "fulljournalname": "The Lancet"
+    },
+    "37000002": {
+      "uid": "37000002",
+      "title": "Personalized cancer vaccines: manufacturing and clinical outcomes",
+      "pubdate": "2024 Jan 10",
+      "source": "Nat Rev Drug Discov"
+    }
+  }
+}

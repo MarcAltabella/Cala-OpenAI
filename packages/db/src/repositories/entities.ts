@@ -5,3 +5,4 @@ export function insertEntity(input: { type: EntityType; externalId?: string | nu
 export function listEntities(type?: EntityType): Entity[] { return [...entities.values()].filter(e => !type || e.type === type); }
 export function insertRelationship(input: Omit<Relationship, 'id'>): Relationship { const relationship = { id: randomUUID(), ...input }; relationships.push(relationship); return relationship; }
 export function listRelationships(): Relationship[] { return [...relationships]; }
+export function resetEntities(): void { entities.clear(); relationships.length = 0; }

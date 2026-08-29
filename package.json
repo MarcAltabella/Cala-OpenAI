@@ -2,6 +2,18 @@
   "name": "cala-healthcare-intelligence",
   "private": true,
   "packageManager": "pnpm@9.15.0",
-  "scripts": { "typecheck": "pnpm -r typecheck", "test": "pnpm -r test" },
-  "devDependencies": { "typescript": "^5.6.3" }
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "demo:moderna": "tsx scripts/run-moderna.ts"
+  },
+  "devDependencies": {
+    "@cala/agents": "workspace:*",
+    "@cala/contracts": "workspace:*",
+    "@cala/db": "workspace:*",
+    "@cala/graph": "workspace:*",
+    "@cala/ingestion": "workspace:*",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
 }
