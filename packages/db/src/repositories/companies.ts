@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
 import { databaseEnabled, db } from '../client.js';
 import { companies as companiesTable } from '../schema.js';
-
 function recencyFor(displayOrder: number): CompanyRecency {
   return displayOrder % 2 === 0 ? 'high' : 'mid';
 }
@@ -27,6 +26,9 @@ export async function listCompaniesPersisted(): Promise<Company[]> { return (awa
 export async function getCompanyPersisted(id: string): Promise<Company | undefined> { const [row] = await db.select().from(companiesTable).where(eq(companiesTable.id, id)).limit(1); return row ? fromRow(row) : undefined; }
 export async function createCompanyPersisted(input: { name: string; ticker: string | null }): Promise<Company> {
   const displayOrder = (await listCompaniesPersisted()).length;
-  const [row] = await db.insert(companiesTable).values({ name: input.name, ticker: input.ticker, displayOrder, recency: recencyFor(displayOrder) }).returning();
+  const [row] = await db
+    .insert(companiesTable)
+    .values({ name: input.name, ticker: input.ticker, displayOrder, recency: recencyFor(displayOrder) })
+    .returning();
   return fromRow(row);
 }

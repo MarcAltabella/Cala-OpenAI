@@ -19,8 +19,16 @@ export function createRun(input: RunInput): AgentRun {
   runs.set(run.id, run);
   return run;
 }
-export function getRun(id: string): AgentRun | undefined { return runs.get(id); }
-export function listRuns(companyId: string): AgentRun[] { return [...runs.values()].filter(run => run.companyId === companyId).sort((a, b) => Date.parse(b.startedAt ?? '') - Date.parse(a.startedAt ?? '')); }
+export function getRun(id: string): AgentRun | undefined {
+  return runs.get(id);
+}
+
+export function listRuns(companyId: string): AgentRun[] {
+  return [...runs.values()]
+    .filter((run) => run.companyId === companyId)
+    .sort((a, b) => Date.parse(b.startedAt ?? '') - Date.parse(a.startedAt ?? ''));
+}
+
 export function updateRun(id: string, patch: Partial<Omit<AgentRun, 'id'>>): AgentRun | undefined {
   const run = runs.get(id);
   if (!run) return undefined;
@@ -28,8 +36,13 @@ export function updateRun(id: string, patch: Partial<Omit<AgentRun, 'id'>>): Age
   runs.set(id, next);
   return next;
 }
-export function setRunPhase(id: string, phase: AgentRunPhase): AgentRun | undefined { return updateRun(id, { phase }); }
-export function resetRuns(): void { runs.clear(); }
+export function setRunPhase(id: string, phase: AgentRunPhase): AgentRun | undefined {
+  return updateRun(id, { phase });
+}
+
+export function resetRuns(): void {
+  runs.clear();
+}
 
 export { databaseEnabled };
 
@@ -48,7 +61,10 @@ function fromRow(row: typeof agentRuns.$inferSelect): AgentRun {
 }
 
 export async function createRunPersisted(input: RunInput): Promise<AgentRun> {
-  const [row] = await db.insert(agentRuns).values({ companyId: input.companyId ?? null, mode: input.mode, status: 'queued', phase: 'queued', counts: {} }).returning();
+  const [row] = await db
+    .insert(agentRuns)
+    .values({ companyId: input.companyId ?? null, mode: input.mode, status: 'queued', phase: 'queued', counts: {} })
+    .returning();
   return fromRow(row);
 }
 
