@@ -1,0 +1,71 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M178ZSV8XDG0NF36GYTV4WGF",
+  "session_id": "2b8c5837-ef28-4ac2-a960-4469e9b03096",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-29T17:27:29.394172Z",
+  "branch": "mauro/interactive-knowledge-graph",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "apps/web/src/components/AgentFlow.css",
+    "apps/web/src/components/AgentFlow.tsx",
+    "apps/web/src/lib/api.ts",
+    "apps/web/src/pages/CompaniesPage.tsx",
+    "apps/web/src/pages/CompanyPage.tsx"
+  ],
+  "agent": "Cursor",
+  "model": "cursor-grok-4.6-medium-fast",
+  "turn_id": "10d2c7ec1641",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 92174,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 396672,
+    "output_tokens": 9412,
+    "api_call_count": 1
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-29T17:27:29.372701Z",
+    "agent_lines": 56,
+    "agent_removed": 34,
+    "human_added": 295,
+    "human_modified": 148,
+    "human_removed": 0,
+    "total_committed": 426,
+    "total_lines_changed": 594,
+    "agent_percentage": 15.151515151515152,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 40,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 113,
+      "user_lines_removed": 36,
+      "agent_lines_added": 204,
+      "agent_lines_removed": 70,
+      "user_added_per_file": {
+        ".cursor/hooks.json": 40,
+        "apps/web/src/components/AgentFlow.css": 6,
+        "apps/web/src/components/AgentFlow.tsx": 67
+      },
+      "user_removed_per_file": {
+        "apps/web/src/components/AgentFlow.css": 5,
+        "apps/web/src/components/AgentFlow.tsx": 31
+      }
+    }
+  ]
+}

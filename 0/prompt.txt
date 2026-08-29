@@ -1,0 +1,1 @@
+hardcode a demo from the flow agent use boxes for the tools implemented already ensure everything is in the nodes that we have in the UI with the tools
