@@ -1,4 +1,5 @@
 export * from './models.js';
+export * from './sql.js';
 export * from './cala.js';
 export * from './fastino.js';
 export * from './tools.js';

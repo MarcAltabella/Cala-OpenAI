@@ -1,4 +1,5 @@
-export type Company = { id: string; name: string; ticker: string | null; displayOrder: number; createdAt: string };
+export type CompanyRecency = 'mid' | 'high';
+export type Company = { id: string; name: string; ticker: string | null; displayOrder: number; recency: CompanyRecency; createdAt: string };
 export type EntityType = 'company' | 'person' | 'institution' | 'paper' | 'patent' | 'clinical_trial' | 'news';
 export type Entity = { id: string; type: EntityType; externalId: string | null; label: string; properties: Record<string, unknown>; sourceId?: string | null };
 export type Person = Entity & { type: 'person' }; export type Institution = Entity & { type: 'institution' };

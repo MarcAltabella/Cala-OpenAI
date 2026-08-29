@@ -43,7 +43,12 @@ export async function runResearch(
   const since = input.since ?? new Date(Date.now() - 1000 * 60 * 60 * 24 * 365);
   const result: ResearchResult = { documentIds: [], entityIds: [], relationshipIds: [], documentSummaries: [], errors: [] };
 
-  const companyEntity = await deps.repos.entities.upsert({ entityType: 'company', label: company.name, sourceId: company.id });
+  const companyEntity = await deps.repos.entities.upsert({
+    entityType: 'company',
+    label: company.name,
+    sourceId: company.id,
+    externalId: company.ticker ?? company.id,
+  });
   result.entityIds.push(companyEntity.record.id);
   await deps.graph.projectEntity(companyEntity.record);
 
@@ -66,7 +71,13 @@ export async function runResearch(
         result.documentSummaries.push(`${document.documentKind}: ${document.title}`);
         if (upserted.isNew) newTexts.push(document.text);
 
-        const docEntity = await deps.repos.entities.upsert({ entityType: document.documentKind, label: document.title, sourceId: upserted.record.id });
+        const entityType = document.documentKind === 'trial' ? 'clinical_trial' : document.documentKind;
+        const docEntity = await deps.repos.entities.upsert({
+          entityType,
+          label: document.title,
+          sourceId: upserted.record.id,
+          externalId: `${document.provider}:${document.providerId}`,
+        });
         result.entityIds.push(docEntity.record.id);
         await deps.graph.projectEntity(docEntity.record);
 

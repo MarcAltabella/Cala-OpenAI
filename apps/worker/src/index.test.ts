@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { runNow } from './index.js';
 import { startDailyScheduler } from './scheduler.js';
 
-const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, createdAt: '2026-01-01T00:00:00.000Z' };
+const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, recency: 'high', createdAt: '2026-01-01T00:00:00.000Z' };
 const runId = 'run-worker-1';
 const paper: NormalizedDocument = { provider: 'pubmed', providerId: '1', companyId: company.id, url: null, publishedAt: null, title: 'Paper', text: 'text', rawPayload: {}, contentHash: 'h1', documentKind: 'paper' };
 

@@ -63,9 +63,10 @@ export async function listRunsPersisted(companyId: string): Promise<AgentRun[]> 
 }
 
 export async function updateRunPersisted(id: string, patch: Partial<Omit<AgentRun, 'id'>>): Promise<AgentRun | undefined> {
-  const values: Partial<typeof agentRuns.$inferInsert> = { ...patch };
-  if ('startedAt' in patch) values.startedAt = patch.startedAt ? new Date(patch.startedAt) : null;
-  if ('finishedAt' in patch) values.finishedAt = patch.finishedAt ? new Date(patch.finishedAt) : null;
+  const { startedAt, finishedAt, ...rest } = patch;
+  const values: Partial<typeof agentRuns.$inferInsert> = { ...rest };
+  if ('startedAt' in patch) values.startedAt = startedAt ? new Date(startedAt) : null;
+  if ('finishedAt' in patch) values.finishedAt = finishedAt ? new Date(finishedAt) : null;
   const [row] = await db.update(agentRuns).set(values).where(eq(agentRuns.id, id)).returning();
   return row ? fromRow(row) : undefined;
 }

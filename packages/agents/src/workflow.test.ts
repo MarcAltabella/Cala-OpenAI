@@ -10,7 +10,7 @@ import type { WorkflowDeps } from './deps.js';
 import type { ResearchTool } from './tools.js';
 import { runIntelligenceWorkflow } from './workflow.js';
 
-const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, createdAt: '2026-01-01T00:00:00.000Z' };
+const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, recency: 'high', createdAt: '2026-01-01T00:00:00.000Z' };
 const runId = 'run-1';
 
 function paperDoc(id: string): NormalizedDocument {

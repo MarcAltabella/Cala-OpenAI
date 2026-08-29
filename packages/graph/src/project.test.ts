@@ -37,4 +37,27 @@ describe('graph projection', () => {
     await projectAll(graph, { entities: [company, paper], relationships: [edge] });
     expect((await graph.neighborhood({ companyId: 'moderna', types: ['ACQUIRED'] })).edges).toHaveLength(0);
   });
+
+  it('expands from an arbitrary node and filters neighbor entity types', async () => {
+    const graph = new InMemoryGraph();
+    const news: GraphEntity = { id: 'n1', entityType: 'news', label: 'Readout', sourceId: null };
+    const newsEdge: GraphRelationship = { id: 'r2', fromEntityId: 'n1', toEntityId: 'p1', relationshipType: 'EVIDENCES', evidenceDocumentId: null };
+    await projectAll(graph, { entities: [company, paper, news], relationships: [edge, newsEdge] });
+    const expanded = await graph.neighborhood({ nodeId: 'p1', entityTypes: ['news'] });
+    expect(expanded.nodes.map((node) => node.id).sort()).toEqual(['n1', 'p1']);
+    expect(expanded.edges.map((relationship) => relationship.id)).toEqual(['r2']);
+  });
+
+  it('reports in-memory connectivity', async () => {
+    await expect(new InMemoryGraph().verifyConnectivity()).resolves.toBeUndefined();
+  });
+
+  it('returns every company and relation when no seed is given', async () => {
+    const graph = new InMemoryGraph();
+    const merck: GraphEntity = { id: 'c2', entityType: 'company', label: 'Merck', sourceId: 'merck' };
+    await projectAll(graph, { entities: [company, paper, merck], relationships: [edge] });
+    const result = await graph.neighborhood({ limit: 10_000 });
+    expect(result.nodes.map((node) => node.id).sort()).toEqual(['c1', 'c2', 'p1']);
+    expect(result.edges).toHaveLength(1);
+  });
 });

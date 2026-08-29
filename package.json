@@ -5,7 +5,8 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "demo:moderna": "tsx scripts/run-moderna.ts"
+    "demo:moderna": "tsx scripts/run-moderna.ts",
+    "seed:watchlist": "tsx scripts/seed-watchlist.ts"
   },
   "devDependencies": {
     "@cala/agents": "workspace:*",

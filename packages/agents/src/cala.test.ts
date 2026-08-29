@@ -2,7 +2,7 @@ import type { Company } from '@cala/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { HttpCalaClient, MockCalaClient, financeQuery, healthcareQuery } from './cala.js';
 
-const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, createdAt: '2026-01-01T00:00:00.000Z' };
+const company: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, recency: 'high', createdAt: '2026-01-01T00:00:00.000Z' };
 
 describe('cala query builders', () => {
   it('builds healthcare and finance queries', () => {

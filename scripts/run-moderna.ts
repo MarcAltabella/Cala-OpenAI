@@ -26,18 +26,19 @@ import {
   MockFastinoClient,
   OpenAIFastinoClient,
   createOpenAIClient,
+  defaultDeps,
   defaultResearchTools,
   runIntelligenceWorkflow,
   type ResearchTool,
   type WorkflowDeps,
 } from '@cala/agents';
-import { createInMemoryRepositories, createInMemoryStore, type InMemoryStore } from '@cala/db';
-import { InMemoryGraph } from '@cala/graph';
+import { createInMemoryRepositories, createInMemoryStore, createRepositoriesFromEnv, migrate, seedCompanies, type InMemoryStore } from '@cala/db';
+import { InMemoryGraph, type GraphProjector } from '@cala/graph';
 import type { NormalizedDocument } from '@cala/ingestion';
 
 // The Moderna melanoma-vaccine narrative: precursor papers, a trial, and the
 // announcement that moved the stock. Used when running offline.
-const MODERNA: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, createdAt: new Date().toISOString() };
+const MODERNA: Company = { id: 'moderna', name: 'Moderna', ticker: 'MRNA', displayOrder: 0, recency: 'high', createdAt: new Date().toISOString() };
 const FIXTURE_DOCS: NormalizedDocument[] = [
   { provider: 'pubmed', providerId: '37000001', companyId: MODERNA.id, url: 'https://pubmed.ncbi.nlm.nih.gov/37000001/', publishedAt: '2023-07-15T00:00:00.000Z', title: 'mRNA-4157 neoantigen vaccine plus pembrolizumab in resected melanoma', text: 'Adjuvant individualized neoantigen therapy reduced recurrence.', rawPayload: {}, contentHash: 'f1', documentKind: 'paper' },
   { provider: 'clinicaltrials', providerId: 'NCT03897881', companyId: MODERNA.id, url: 'https://clinicaltrials.gov/study/NCT03897881', publishedAt: '2019-04-01T00:00:00.000Z', title: 'mRNA-4157 (V940) in combination with pembrolizumab in melanoma', text: 'Phase 2b adjuvant study in high-risk melanoma.', rawPayload: {}, contentHash: 'f2', documentKind: 'trial' },
@@ -52,32 +53,19 @@ function offlineTools(): ResearchTool[] {
   ];
 }
 
-function buildDeps(): { deps: WorkflowDeps; live: boolean; graph: InMemoryGraph; store: InMemoryStore } {
+function buildOfflineDeps(): { deps: WorkflowDeps; live: boolean; graph: InMemoryGraph; store: InMemoryStore; runId: string; companyId: string } {
   const graph = new InMemoryGraph();
   const store = createInMemoryStore({ companies: [MODERNA] });
   const repos = createInMemoryRepositories(store);
-  void repos.runs.update('moderna-demo', { companyId: MODERNA.id, mode: 'delta', status: 'queued', phase: 'queued' });
-  const live = Boolean(process.env.OPENAI_API_KEY && process.env.CALA_API_KEY);
-  if (live) {
-    const openai = createOpenAIClient();
-    return {
-      live,
-      graph,
-      store,
-      deps: {
-        openai,
-        cala: new HttpCalaClient({ timeoutMs: 90_000 }),
-        fastino: new OpenAIFastinoClient(openai.chat),
-        repos,
-        graph,
-        tools: defaultResearchTools({ newsFeedFor: () => process.env.NEWS_FEED_URL || null }),
-      },
-    };
-  }
+  const runId = 'moderna-demo';
+  void repos.runs.update(runId, { companyId: MODERNA.id, mode: 'delta', status: 'queued', phase: 'queued' });
+  const live = false;
   return {
     live,
     graph,
     store,
+    runId,
+    companyId: MODERNA.id,
     deps: {
       cala: new MockCalaClient({ healthcare: { input: 'companies.name=Moderna', entities: [{ id: 'e1', entityType: 'Company', name: 'Moderna', mentions: ['Moderna'] }], results: [{ company: 'Moderna', pipeline: 'mRNA-4157' }] } }),
       fastino: new MockFastinoClient({
@@ -91,22 +79,59 @@ function buildDeps(): { deps: WorkflowDeps; live: boolean; graph: InMemoryGraph;
   };
 }
 
+async function buildLiveDeps(): Promise<{ deps: WorkflowDeps; live: boolean; graph: GraphProjector; store: InMemoryStore | null; runId: string; companyId: string }> {
+  if (process.env.DATABASE_URL) {
+    await migrate();
+    await seedCompanies();
+    const repos = createRepositoriesFromEnv();
+    const moderna = (await repos.companies.list()).find((c) => c.ticker === 'MRNA');
+    if (!moderna) throw new Error('Moderna was not seeded');
+    const run = await repos.runs.create({ companyId: moderna.id, mode: 'seed' });
+    const deps = defaultDeps();
+    return { live: true, graph: deps.graph, store: null, runId: run.id, companyId: moderna.id, deps };
+  }
+  const graph = new InMemoryGraph();
+  const store = createInMemoryStore({ companies: [MODERNA] });
+  const repos = createInMemoryRepositories(store);
+  void repos.runs.update('moderna-demo', { companyId: MODERNA.id, mode: 'delta', status: 'queued', phase: 'queued' });
+  const openai = createOpenAIClient();
+  return {
+    live: true,
+    graph,
+    store,
+    runId: 'moderna-demo',
+    companyId: MODERNA.id,
+    deps: {
+      openai,
+      cala: new HttpCalaClient({ timeoutMs: 90_000 }),
+      fastino: new OpenAIFastinoClient(openai.chat),
+      repos,
+      graph,
+      tools: defaultResearchTools({ newsFeedFor: () => process.env.NEWS_FEED_URL || null }),
+    },
+  };
+}
+
 async function main(): Promise<void> {
-  const { deps, live, graph, store } = buildDeps();
-  console.log(`Running Moderna momentum demo (${live ? 'LIVE' : 'OFFLINE mock'} mode)...\n`);
-  const state = await runIntelligenceWorkflow('moderna-demo', deps);
-  const neighborhood = await graph.neighborhood({ companyId: MODERNA.id });
+  const live = Boolean(process.env.OPENAI_API_KEY && process.env.CALA_API_KEY);
+  const ctx = live ? await buildLiveDeps() : buildOfflineDeps();
+  console.log(`Running Moderna momentum demo (${ctx.live ? 'LIVE' : 'OFFLINE mock'} mode)...\n`);
+  const state = await runIntelligenceWorkflow(ctx.runId, ctx.deps);
+  const neighborhood = await ctx.graph.neighborhood({ companyId: ctx.companyId });
 
   console.log('Documents ingested :', state.documentIds.length);
   console.log('Graph nodes        :', neighborhood.nodes.length);
   console.log('Graph edges        :', neighborhood.edges.map((e) => e.relationshipType).join(', '));
   console.log('Errors             :', state.errors.length ? state.errors.join('; ') : 'none');
   console.log('\nHealthcare gate    :', JSON.stringify(state.healthcareGate, null, 2));
-  if (state.financeImpactId) {
-    console.log('\nFinance impact     :', JSON.stringify(store.financeImpacts.at(-1), null, 2));
+  if (state.financeImpactId && ctx.store) {
+    console.log('\nFinance impact     :', JSON.stringify(ctx.store.financeImpacts.at(-1), null, 2));
+  } else if (state.financeImpactId) {
+    console.log('\nFinance impact     : persisted', state.financeImpactId);
   } else {
     console.log('\nFinance impact     : gate stopped the run (not new/relevant).');
   }
+  await ctx.graph.close();
 }
 
 main().catch((error) => {
