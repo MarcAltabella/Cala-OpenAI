@@ -1,0 +1,9 @@
+export type Company = { id: string; name: string; ticker: string | null; displayOrder: number; createdAt: string };
+export type SourceDocument = { id: string; companyId: string | null; provider: string; providerId: string; url: string | null; publishedAt: string | null; rawPayload: unknown; normalizedText: string; contentHash: string; createdAt: string };
+export type Development = { id: string; companyId: string; sourceDocumentId: string; summary: string; relevanceScore: number; status: 'new' | 'analyzed' | 'dismissed'; createdAt: string };
+export type FinanceAnalysis = { id: string; developmentId: string; marketSnapshot: unknown; impact: string; confidence: number; rationale: string; createdAt: string };
+export type AgentRun = { id: string; companyId: string | null; mode: 'seed' | 'delta'; status: 'queued' | 'running' | 'completed' | 'failed'; startedAt: string | null; finishedAt: string | null; error: string | null; counts: Record<string, number> };
+export type DailyReport = { id: string; reportDate: string; summary: string; createdAt: string };
+export type GraphEntity = { id: string; entityType: string; label: string; sourceId: string | null };
+export type GraphRelationship = { id: string; fromEntityId: string; toEntityId: string; relationshipType: string; evidenceDocumentId: string | null };
+export type RunInput = { companyId?: string; mode: 'seed' | 'delta' };
