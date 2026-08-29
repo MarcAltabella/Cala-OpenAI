@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M16ZZGRBC0J9PCJJZ84QREK6",
+  "strategy": "manual-commit",
+  "branch": "mauro/dev2-agents-pipeline",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/api/package.json",
+    "apps/api/src/app.ts",
+    "apps/api/src/routes/knowledge-graph.ts",
+    "packages/contracts/src/index.ts",
+    "packages/db/drizzle/0002_careless_starjammers.sql",
+    "packages/db/drizzle/meta/0002_snapshot.json",
+    "packages/db/drizzle/meta/_journal.json",
+    "packages/db/src/repositories/entities.ts",
+    "packages/db/src/repositories/finance-impacts.ts",
+    "packages/db/src/repositories/runs.ts",
+    "packages/db/src/schema.test.ts",
+    "packages/db/src/schema.ts",
+    "packages/db/src/seed.ts",
+    "pnpm-lock.yaml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ]
+}

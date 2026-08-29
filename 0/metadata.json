@@ -1,0 +1,46 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M16ZZGRBC0J9PCJJZ84QREK6",
+  "session_id": "a212b1df-e153-40c8-8255-3d505987f4c6",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-29T14:50:02.939631Z",
+  "branch": "mauro/dev2-agents-pipeline",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/api/package.json",
+    "apps/api/src/app.ts",
+    "apps/api/src/routes/knowledge-graph.ts",
+    "packages/contracts/src/index.ts",
+    "packages/db/drizzle/0002_careless_starjammers.sql",
+    "packages/db/drizzle/meta/0002_snapshot.json",
+    "packages/db/drizzle/meta/_journal.json",
+    "packages/db/src/repositories/entities.ts",
+    "packages/db/src/repositories/finance-impacts.ts",
+    "packages/db/src/repositories/runs.ts",
+    "packages/db/src/schema.test.ts",
+    "packages/db/src/schema.ts",
+    "packages/db/src/seed.ts",
+    "pnpm-lock.yaml"
+  ],
+  "agent": "Cursor",
+  "model": "auto-smart",
+  "turn_id": "13bcb800172e",
+  "checkpoint_transcript_start": 84,
+  "transcript_lines_at_start": 84,
+  "compact_transcript_start": 26,
+  "session_metrics": {
+    "turn_count": 5
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-29T14:50:02.926994Z",
+    "agent_lines": 1233,
+    "agent_removed": 8,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1233,
+    "total_lines_changed": 1241,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
