@@ -19,7 +19,14 @@ export type NormalizedDocument = {
 // `fetchImpl` is injected so adapters are testable against fixtures with no
 // network access. Adapters throw a provider-scoped error the workflow records
 // without aborting sibling providers.
-export type FetchImpl = (url: string, init?: { signal?: AbortSignal }) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown>; text: () => Promise<string> }>;
+export type FetchRequestInit = {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  signal?: AbortSignal;
+};
+
+export type FetchImpl = (url: string, init?: FetchRequestInit) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown>; text: () => Promise<string> }>;
 
 export type SourceContext = {
   company: Company;

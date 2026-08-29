@@ -25,7 +25,8 @@
 - Use OpenAI for the research agent (tool calling), relation extract, JSON repair, and embeddings.
 - Cala healthcare snapshot runs **in parallel** with the research agent on every run; it is not gated.
 - Research tools wrap source adapters and may change; keep one adapter per PR.
-- Use live APIs: ClinicalTrials.gov, PubMed/PMC, PatentsView (or equivalent USPTO API), FDA, DailyMed, SEC EDGAR, company IR/news, healthcare news feeds, Cala, OpenAI, and Hugging Face.
+- Use live APIs: ClinicalTrials.gov, PubMed/PMC, PatentsView (or equivalent USPTO API), FDA, DailyMed, SEC EDGAR, company IR/news, Tavily web news (snippets only), healthcare news feeds, Cala, OpenAI, and Hugging Face.
+- Fastino Healthcare is a gate over stored evidence only; it must not call web search. Open-web news is a research adapter (`web_news`).
 - Keep the MVP local: Docker Compose, no auth, Redis, Supabase, managed database, or cloud scheduler.
 - Use Tailwind CSS and native React/HTML components for all dashboard UI; do not add a component, chart, or dashboard library in MVP.
 - Use React Flow (`@xyflow/react`) for the interactive knowledge-graph UI.
@@ -253,12 +254,12 @@ git commit -m "feat(api): add directory timeline and run endpoints"
 
 **Owner:** Developer 2
 
-Adapters are the **tools** behind the OpenAI research agent. Tool names may change later; each adapter remains its own PR. This pass ships a vertical slice: PubMed, ClinicalTrials, and news/IR. Patents, FDA, DailyMed, and SEC are deferred to follow-up PRs.
+Adapters are the **tools** behind the OpenAI research agent. Tool names may change later; each adapter remains its own PR. **Shipped on this branch:** PubMed, ClinicalTrials, news/IR, and Tavily `web_news`. Patents, FDA, DailyMed, and SEC remain deferred. Research still executes tools sequentially in `runResearch`; Fastino Healthcare has no search tool.
 
 **Files:**
 - Create: `packages/ingestion/src/types.ts`, `packages/ingestion/src/normalize.ts`
-- Create: `packages/ingestion/src/sources/{pubmed,clinical-trials,news}.ts`
-- Create: `packages/agents/src/tools.ts` (thin LangChain tool wrappers; add as adapters land)
+- Create: `packages/ingestion/src/sources/{pubmed,clinical-trials,news,web-news}.ts`
+- Create: `packages/agents/src/tools.ts` (thin wrappers; add as adapters land)
 - Test: `packages/ingestion/src/normalize.test.ts`, one `*.test.ts` per source adapter (captured JSON fixtures)
 
 **Interfaces:**
@@ -307,7 +308,7 @@ git add packages/ingestion/src/{types.ts,normalize.ts,sources/clinical-trials.ts
 git commit -m "feat(ingestion): add clinical trials source"
 ```
 
-Repeat with separate commits/PRs for PubMed and news. Patents, FDA, DailyMed, and SEC are deferred; do not combine provider adapters.
+Repeat with separate commits/PRs for PubMed, news/IR, and Tavily `web_news`. Patents, FDA, DailyMed, and SEC are deferred; do not combine provider adapters.
 
 ## Task 5: Implement the LangGraph run: fan-out, gate, optional finance
 
@@ -680,10 +681,10 @@ git commit -m "docs: add local demo runbook"
 1. `build: add local development workspace`
 2. `feat(data): define healthcare graph records`
 3. `feat(api): add directory timeline and run endpoints` (split if needed)
-4. Vertical-slice source-adapter PRs (pubmed, clinical-trials, news); patents, fda, dailymed, sec deferred
-5. `feat(agents): fan out research and gate finance analysis` (split Cala+Fastino clients / research / workflow if needed)
-6. `feat(graph): project healthcare world relationships`
-6b. `feat(worker): run intelligence workflow on enqueue`
+4. Vertical-slice source-adapter PRs (pubmed, clinical-trials, news, web_news/Tavily); patents, fda, dailymed, sec deferred
+5. `feat(agents): fan out research and gate finance analysis` (split Cala+Fastino clients / research / workflow if needed) — **shipped** on `mauro/dev2-agents-pipeline`
+6. `feat(graph): project healthcare world relationships` — **shipped**
+6b. `feat(worker): run intelligence workflow on enqueue` — **shipped**
 7. `feat(web): add healthcare knowledge graph explorer`
 8. `feat(web): show company people and research timeline`
 9. `feat(web): show company momentum reports`
@@ -705,6 +706,6 @@ Each PR description must use:
 
 - Scope coverage: POST /runs fan-out, Cala healthcare vs finance (real `knowledge/query` client + mock), OpenAI research tools, Fastino gate and finance behind a swappable OpenAI-backed client, PostgreSQL, Neo4j, worker wiring, and the Moderna demo are assigned to tasks.
 - Developer 1 owns the run-graph contracts and tables (`cala_snapshots`, `healthcare_gates`, `finance_impacts`) in Task 2 and the `GET /knowledge-graph` route in Task 3; Developer 2 consumes them.
-- Developer 2 vertical slice: pubmed/clinical-trials/news adapters (Task 4), dependency-injected workflow (Task 5), Neo4j projection with a fake driver (Task 6), worker + live demo (Task 6b). Patents, FDA, DailyMed, SEC, people/institution linking, and momentum synthesis are explicit follow-ups.
+- Developer 2 vertical slice **shipped** on `mauro/dev2-agents-pipeline`: pubmed/clinical-trials/news/web_news adapters (Task 4), dependency-injected workflow (Task 5), Neo4j projection with a fake driver (Task 6), worker + live demo (Task 6b). `web_news` is Tavily title+snippet+URL; it does not change the healthcare gate. Remaining: dashboard (Developer 3), patents/FDA/DailyMed/SEC, people/institution linking, momentum synthesis, real Fastino HF endpoints.
 - Testability: every external service (Cala, Fastino, OpenAI, Neo4j) is injected, so `pnpm test` passes with mocks and in-memory repos; live keys are only needed for `scripts/run-moderna.ts`.
 - No placeholders: every task declares files, interfaces, a focused test, runnable commands, and a commit.

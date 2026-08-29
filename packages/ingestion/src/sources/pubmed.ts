@@ -41,7 +41,7 @@ export function createPubmedAdapter(): SourceAdapter {
     async fetch(context: SourceContext): Promise<NormalizedDocument[]> {
       try {
         const term = encodeURIComponent(`${context.company.name}[Affiliation] OR ${context.company.name}[Title/Abstract]`);
-        const search = (await fetchJson(`${ESEARCH}?db=pubmed&retmode=json&term=${term}`, context)) as {
+        const search = (await fetchJson(`${ESEARCH}?db=pubmed&retmode=json&retmax=20&term=${term}`, context)) as {
           esearchresult?: { idlist?: string[] };
         };
         const ids = search.esearchresult?.idlist ?? [];

@@ -30,7 +30,7 @@ export function createOpenAIClient(options: OpenAIClientOptions = {}): OpenAICli
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY is required to create the OpenAI client');
   const client = new OpenAI({ apiKey });
-  const chatModel = options.chatModel ?? process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o';
+  const chatModel = options.chatModel ?? process.env.OPENAI_CHAT_MODEL ?? 'gpt-5.6-luna';
   const embeddingModel = options.embeddingModel ?? process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small';
   return {
     chat: {

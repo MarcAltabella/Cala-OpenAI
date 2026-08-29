@@ -29,4 +29,18 @@ describe('normalize', () => {
     const fetchImpl = vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}), text: async () => '' }));
     await expect(fetchJson('https://example.test', { fetchImpl: fetchImpl as never })).rejects.toThrow(/503/);
   });
+
+  it('fetchJson forwards POST method, headers, and body', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true }), text: async () => '' }));
+    await fetchJson('https://example.test/search', {
+      fetchImpl: fetchImpl as never,
+      method: 'POST',
+      headers: { Authorization: 'Bearer k' },
+      body: '{"q":"x"}',
+    });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://example.test/search',
+      expect.objectContaining({ method: 'POST', headers: { Authorization: 'Bearer k' }, body: '{"q":"x"}' }),
+    );
+  });
 });

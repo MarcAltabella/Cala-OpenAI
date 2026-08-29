@@ -2,6 +2,7 @@ import {
   createClinicalTrialsAdapter,
   createNewsAdapter,
   createPubmedAdapter,
+  createWebNewsAdapter,
   type NormalizedDocument,
   type SourceAdapter,
   type SourceContext,
@@ -21,9 +22,10 @@ export function adapterTool(adapter: SourceAdapter): ResearchTool {
 
 export type DefaultToolOptions = {
   newsFeedFor?: (company: Company) => string | null;
+  tavilyApiKey?: string | null;
 };
 
-// The vertical slice: PubMed, ClinicalTrials.gov, and news. Patents, FDA,
+// PubMed, ClinicalTrials.gov, IR/RSS news, and Tavily web news. Patents, FDA,
 // DailyMed, and SEC are deferred.
 export function defaultResearchTools(options: DefaultToolOptions = {}): ResearchTool[] {
   const newsFeedFor = options.newsFeedFor ?? (() => process.env.NEWS_FEED_URL ?? null);
@@ -31,5 +33,6 @@ export function defaultResearchTools(options: DefaultToolOptions = {}): Research
     adapterTool(createPubmedAdapter()),
     adapterTool(createClinicalTrialsAdapter()),
     adapterTool(createNewsAdapter(newsFeedFor)),
+    adapterTool(createWebNewsAdapter({ apiKey: options.tavilyApiKey })),
   ];
 }
