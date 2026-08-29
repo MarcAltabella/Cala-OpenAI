@@ -7,3 +7,6 @@ companiesRouter.post('/', (req, res) => {
   if (typeof name !== 'string' || !name.trim() || (ticker !== null && typeof ticker !== 'string')) return res.status(400).json({ error: 'name and ticker are required' });
   return res.status(201).json(createCompany({ name: name.trim(), ticker }));
 });
+companiesRouter.get('/:id/timeline', (_req, res) => res.json([]));
+companiesRouter.get('/:id/people', (_req, res) => res.json([]));
+companiesRouter.get('/:id/developments', (_req, res) => res.json([]));

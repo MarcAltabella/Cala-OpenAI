@@ -4,7 +4,7 @@ export const runsRouter = Router();
 export let enqueueRun = (_runId: string): void => {};
 runsRouter.post('/', (req, res) => {
   const { companyId, mode } = req.body ?? {};
-  if (mode !== 'seed' && mode !== 'delta') return res.status(400).json({ error: "mode must be 'seed' or 'delta'" });
+  if (typeof companyId !== 'string' || (mode !== 'seed' && mode !== 'delta')) return res.status(400).json({ error: "companyId and mode ('seed' or 'delta') are required" });
   const run = createRun({ companyId, mode }); enqueueRun(run.id);
   return res.status(202).json({ id: run.id, status: 'queued' });
 });
