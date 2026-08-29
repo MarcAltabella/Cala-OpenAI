@@ -16,7 +16,8 @@ SET r.relationshipType = $relationshipType, r.evidenceDocumentId = $evidenceDocu
 // One-hop neighborhood around a seed entity, optionally filtered by relationship type.
 export const NEIGHBORHOOD = `
 MATCH (seed:Entity { id: $seedId })-[r:REL]-(other:Entity)
-WHERE $types IS NULL OR r.relationshipType IN $types
+WHERE ($types IS NULL OR r.relationshipType IN $types)
+  AND ($query IS NULL OR toLower(seed.label) CONTAINS toLower($query) OR toLower(other.label) CONTAINS toLower($query))
 RETURN seed, r, other
 LIMIT $limit
 `;

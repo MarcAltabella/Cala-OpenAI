@@ -17,6 +17,7 @@ export function createRun(input: RunInput): AgentRun {
   return run;
 }
 export function getRun(id: string): AgentRun | undefined { return runs.get(id); }
+export function listRuns(companyId: string): AgentRun[] { return [...runs.values()].filter(run => run.companyId === companyId).sort((a, b) => Date.parse(b.startedAt ?? '') - Date.parse(a.startedAt ?? '')); }
 export function updateRun(id: string, patch: Partial<Omit<AgentRun, 'id'>>): AgentRun | undefined {
   const run = runs.get(id);
   if (!run) return undefined;

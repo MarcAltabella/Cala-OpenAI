@@ -34,7 +34,7 @@ export class InMemoryGraph implements GraphProjector {
       nodeIds.add(e.fromEntityId);
       nodeIds.add(e.toEntityId);
     }
-    const nodes = [...this.nodes.values()].filter((n) => nodeIds.has(n.id));
+    const nodes = [...this.nodes.values()].filter((n) => nodeIds.has(n.id) && (!input.query || n.label.toLocaleLowerCase().includes(input.query.toLocaleLowerCase())));
     return { nodes: nodes.slice(0, limit), edges: edges.slice(0, limit) };
   }
   async close(): Promise<void> {}
@@ -74,7 +74,7 @@ export class Neo4jGraph implements GraphProjector {
   async neighborhood(input: NeighborhoodInput): Promise<Neighborhood> {
     const session = this.driver.session();
     try {
-      const result = await session.run(NEIGHBORHOOD, { seedId: seedId(input) ?? null, types: input.types ?? null, limit: neo4j.int(input.limit ?? 100) });
+      const result = await session.run(NEIGHBORHOOD, { seedId: seedId(input) ?? null, types: input.types ?? null, query: input.query ?? null, limit: neo4j.int(input.limit ?? 100) });
       const nodes = new Map<string, GraphEntity>();
       const edges = new Map<string, GraphRelationship>();
       for (const record of result.records) {
