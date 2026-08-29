@@ -1,0 +1,18 @@
+The definition of the project is to create a dashboard for market intelligence, but not focused only on companies but also relying on thigs like scientific, papers, cliical trials, patents etc. -> similar idea but brader on healthcare world. 
+
+a knoledge grpah for the dashboard could be this: 
+- companies (20 most important healthcare companies)
+- employees of companies and researchers
+- papers (PubMed)
+- news about healthcare
+- university research departments, and its scientific people.
+
+the objective is to create this dashboard knowledge graph for llm specialized on heatlhcare and finance were all this main points are interconnected between them, to infer relation and possible investements. 
+Practical case: 
+"
+Moderna recently announced a RNA based cancer vaccine that stops melanoma from returning. This announcement made their stock price instantaneously skyrocket.
+Our thesis is that this event is not independent, but rather there must exist a history of events such as patent registration, company reports, scientific paper publications, announcements of collaborations with research groups or acquisitions of smaller companies.
+With this information we should be able to track and build a momentum report for a given company to infer whether they might be pushing out a new product so that we can invest in the company prior to stock market reaction.
+"
+
+change the planning and anything you need relevant to create a md for plan for different developers later
