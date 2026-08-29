@@ -8,6 +8,13 @@
       "when": 1788005120865,
       "tag": "0000_cloudy_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788010306787,
+      "tag": "0001_next_blizzard",
+      "breakpoints": true
     }
   ]
 }
