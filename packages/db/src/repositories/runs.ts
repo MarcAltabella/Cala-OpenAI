@@ -1,7 +1,7 @@
 import type { AgentRun, AgentRunPhase, RunInput } from '@cala/contracts';
 import { randomUUID } from 'node:crypto';
 import { eq, desc } from 'drizzle-orm';
-import { db } from '../client.js';
+import { databaseEnabled, db } from '../client.js';
 import { agentRuns } from '../schema.js';
 const runs = new Map<string, AgentRun>();
 export function createRun(input: RunInput): AgentRun {
@@ -31,7 +31,7 @@ export function updateRun(id: string, patch: Partial<Omit<AgentRun, 'id'>>): Age
 export function setRunPhase(id: string, phase: AgentRunPhase): AgentRun | undefined { return updateRun(id, { phase }); }
 export function resetRuns(): void { runs.clear(); }
 
-export function databaseEnabled(): boolean { return Boolean(process.env.DATABASE_URL); }
+export { databaseEnabled };
 
 function fromRow(row: typeof agentRuns.$inferSelect): AgentRun {
   return {
@@ -64,7 +64,7 @@ export async function listRunsPersisted(companyId: string): Promise<AgentRun[]> 
 
 export async function updateRunPersisted(id: string, patch: Partial<Omit<AgentRun, 'id'>>): Promise<AgentRun | undefined> {
   const { startedAt, finishedAt, ...rest } = patch;
-  const values: Partial<typeof agentRuns.$inferInsert> = { ...rest };
+  const values: Partial<typeof agentRuns.$inferInsert> = rest;
   if ('startedAt' in patch) values.startedAt = startedAt ? new Date(startedAt) : null;
   if ('finishedAt' in patch) values.finishedAt = finishedAt ? new Date(finishedAt) : null;
   const [row] = await db.update(agentRuns).set(values).where(eq(agentRuns.id, id)).returning();

@@ -1,7 +1,7 @@
 import type { Company, CompanyRecency } from '@cala/contracts';
 import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
-import { db } from '../client.js';
+import { databaseEnabled, db } from '../client.js';
 import { companies as companiesTable } from '../schema.js';
 
 function recencyFor(displayOrder: number): CompanyRecency {
@@ -17,7 +17,8 @@ export function createCompany(input: { name: string; ticker: string | null }): C
 }
 export function resetCompanies(): void { companies.length = 0; }
 
-export function databaseEnabled(): boolean { return Boolean(process.env.DATABASE_URL); }
+export { databaseEnabled };
+
 function fromRow(row: typeof companiesTable.$inferSelect): Company {
   const recency = row.recency === 'high' ? 'high' : 'mid';
   return { id: row.id, name: row.name, ticker: row.ticker, displayOrder: row.displayOrder, recency, createdAt: row.createdAt.toISOString() };

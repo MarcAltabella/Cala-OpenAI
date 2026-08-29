@@ -3,8 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
 import { db } from '../client.js';
 import { runEvents } from '../schema.js';
-import { databaseEnabled } from './runs.js';
-
 const events = new Map<string, RunEvent[]>();
 const secretKeys = /apiKey|api_key|token|secret|authorization|password/i;
 function redact(value: unknown): unknown {
