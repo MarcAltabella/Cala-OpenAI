@@ -1,5 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CompaniesPage } from './pages/CompaniesPage';
+import { CompanyPage } from './pages/CompanyPage';
 import { KnowledgeGraphPage } from './pages/KnowledgeGraphPage';
+import { Sidebar } from './components/Sidebar';
 
-export default function App() { const [path, setPath] = useState(window.location.pathname); useEffect(() => { const onPop = () => setPath(window.location.pathname); addEventListener('popstate', onPop); return () => removeEventListener('popstate', onPop); }, []); const graph = useMemo(() => path === '/knowledge-graph', [path]); return <div className="app-shell"><aside className="sidebar"><div className="brand"><span className="brand-mark">C</span><span>Cala intelligence</span></div><nav><button className={!graph ? 'nav-item active' : 'nav-item'} onClick={() => { history.pushState({}, '', '/'); setPath('/'); }}>▦ <span>Companies</span></button><button className={graph ? 'nav-item active' : 'nav-item'} onClick={() => { history.pushState({}, '', '/knowledge-graph'); setPath('/knowledge-graph'); }}>⌘ <span>Knowledge Graph</span></button></nav><div className="sidebar-foot">Local demo<br /><span>Healthcare intelligence</span></div></aside><main className="main-content">{graph ? <KnowledgeGraphPage /> : <CompaniesPage />}</main></div> }
+export default function App() {
+  const [path, setPath] = useState(window.location.pathname);
+  useEffect(() => { document.title = 'predict'; const onPop = () => setPath(window.location.pathname); addEventListener('popstate', onPop); return () => removeEventListener('popstate', onPop); }, []);
+  const companyMatch = path.match(/^\/companies\/([^/]+)/);
+  const navigate = (next: string) => { history.pushState({}, '', next); setPath(next); };
+  const graphRoute = path.startsWith('/knowledge-graph');
+  return <div className="app-shell"><Sidebar path={path} onNavigate={navigate} /><main className={`main-content ${graphRoute ? 'graph-main-content' : ''}`}>{graphRoute ? <KnowledgeGraphPage /> : companyMatch ? <CompanyPage companyId={companyMatch[1]} onBack={() => navigate('/')} /> : <CompaniesPage onOpen={(id) => navigate(`/companies/${id}`)} />}</main></div>;
+}
