@@ -9,19 +9,20 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@cala/contracts": "workspace:*",
     "@iconicicons/react": "^1.1.0",
-    "@vitejs/plugin-react": "^4.3.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "vite": "^5.4.10"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.5"
+    "vite": "^6.4.3",
+    "vitest": "^3.2.6"
   }
 }

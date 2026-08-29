@@ -1,20 +1,18 @@
 import { ArrowRightIcon, SearchIcon, StarIcon } from '@iconicicons/react';
+import type { Company } from '@cala/contracts';
 
-type Company = {
-  id: string;
-  name: string;
-  ticker: string | null;
-  displayOrder: number;
+type CompanyCard = Company & {
   focus: string;
   logo: string;
 };
 
-const seededCompanies: Company[] = [
+const seededCompanies: CompanyCard[] = [
   {
     id: 'moderna',
     name: 'Moderna',
     ticker: 'MRNA',
     displayOrder: 0,
+    createdAt: '2026-08-29T00:00:00.000Z',
     focus: 'mRNA medicines & vaccines',
     logo: 'https://raw.githubusercontent.com/ln-dev7/logos-apps/master/logos/moderna.svg',
   },
@@ -23,6 +21,7 @@ const seededCompanies: Company[] = [
     name: 'Pfizer',
     ticker: 'PFE',
     displayOrder: 1,
+    createdAt: '2026-08-29T00:00:00.000Z',
     focus: 'Oncology & vaccines',
     logo: 'https://raw.githubusercontent.com/ln-dev7/logos-apps/master/logos/pfizer.svg',
   },
@@ -31,6 +30,7 @@ const seededCompanies: Company[] = [
     name: 'Novartis',
     ticker: 'NVS',
     displayOrder: 2,
+    createdAt: '2026-08-29T00:00:00.000Z',
     focus: 'Innovative medicines',
     logo: 'https://raw.githubusercontent.com/ln-dev7/logos-apps/master/logos/novartis.svg',
   },
@@ -39,6 +39,7 @@ const seededCompanies: Company[] = [
     name: 'Amgen',
     ticker: 'AMGN',
     displayOrder: 3,
+    createdAt: '2026-08-29T00:00:00.000Z',
     focus: 'Biotechnology therapeutics',
     logo: 'https://raw.githubusercontent.com/ln-dev7/logos-apps/master/logos/amgen.svg',
   },
@@ -47,6 +48,7 @@ const seededCompanies: Company[] = [
     name: 'Regeneron',
     ticker: 'REGN',
     displayOrder: 4,
+    createdAt: '2026-08-29T00:00:00.000Z',
     focus: 'Genetic medicine & immunology',
     logo: 'https://raw.githubusercontent.com/ln-dev7/logos-apps/master/logos/regeneron.svg',
   },
@@ -55,13 +57,14 @@ const seededCompanies: Company[] = [
     name: 'Vertex',
     ticker: 'VRTX',
     displayOrder: 5,
+    createdAt: '2026-08-29T00:00:00.000Z',
     focus: 'Serious disease medicines',
     logo: 'https://raw.githubusercontent.com/ln-dev7/logos-apps/master/logos/vertex.svg',
   },
 ];
 
 type CompaniesPageProps = {
-  companies?: Company[];
+  companies?: CompanyCard[];
 };
 
 export function CompaniesPage({ companies = seededCompanies }: CompaniesPageProps) {
