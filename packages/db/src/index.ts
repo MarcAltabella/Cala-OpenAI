@@ -6,5 +6,5 @@ export { createPostgresRepositories } from './repositories/postgres.js';
 export { createRepositoriesFromEnv, resetRepositoriesForTests } from './repositories/from-env.js';
 export { getGraphEntityDetail } from './repositories/graph-details.js';
 export { assertReadOnlySelect, executeReadOnlySql } from './readonly-sql.js';
-export { db, pool, migrate } from './client.js';
+export { databaseEnabled, db, pool, migrate } from './client.js';
 export { seedCompanies, WATCHLIST } from './seed.js';
