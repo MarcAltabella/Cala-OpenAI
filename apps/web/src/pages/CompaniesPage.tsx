@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowUpDown, ExternalLink, Plus, Search } from 'lucide-react';
 import { listCompanies, type Company } from '../lib/api';
-import '../records-page.css';
 
 type Strength = 'strong' | 'medium' | 'weak';
 type RecordCompany = Company & { categories: string[]; development: string; recency: string; strength: Strength; url: string };
