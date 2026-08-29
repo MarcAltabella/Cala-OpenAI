@@ -1,7 +1,9 @@
 import type { AgentRun, AgentRunPhase, RunInput } from '@cala/contracts';
 import { randomUUID } from 'node:crypto';
 const runs = new Map<string, AgentRun>();
+const maxInMemoryRuns = Number.parseInt(process.env.MAX_IN_MEMORY_RUNS ?? '1000', 10);
 export function createRun(input: RunInput): AgentRun {
+  if (runs.size >= maxInMemoryRuns) { const completed = [...runs.values()].find((candidate) => candidate.status === 'completed' || candidate.status === 'failed'); if (completed) runs.delete(completed.id); else throw new Error('In-memory run capacity reached'); }
   const run: AgentRun = {
     id: randomUUID(),
     companyId: input.companyId ?? null,
