@@ -1,0 +1,1 @@
+take @.cursor/plans/developer_2_agents_pipeline_f777de2b.plan.md and modify @docs/superpowers/plans/2026-08-29-healthcare-market-intelligence.md accordingly
