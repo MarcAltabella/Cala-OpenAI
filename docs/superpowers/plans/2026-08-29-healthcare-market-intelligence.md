@@ -65,16 +65,23 @@ flowchart TD
 ```text
 apps/
   api/src/{app.ts,index.ts,routes/*.ts}
-  worker/src/{index.ts,graph.ts,scheduler.ts}
+  worker/src/{index.ts,scheduler.ts}
   web/src/{main.tsx,App.tsx,pages/*.tsx,lib/api.ts}
 packages/
   contracts/src/index.ts
   db/src/{client.ts,schema.ts,repositories/*.ts,seed.ts}
   ingestion/src/{types.ts,normalize.ts,sources/*.ts}
-  agents/src/{models.ts,cala.ts,research.ts,relations.ts,healthcare.ts,finance.ts,workflow.ts}
+  agents/src/{models.ts,cala.ts,fastino.ts,tools.ts,research.ts,relations.ts,healthcare.ts,finance.ts,workflow.ts,deps.ts}
   graph/src/{client.ts,project.ts,queries.ts}
+scripts/run-moderna.ts
 infra/docker-compose.yml
 ```
+
+**Dependency injection:** `runIntelligenceWorkflow(runId, deps)` takes `deps = { cala, fastino, openai, repos, graph, tools }`. Defaults wire real implementations; tests pass mocks plus in-memory repos so the pipeline is verifiable without Postgres, Neo4j, or live API keys.
+
+**External services behind interfaces:**
+- `CalaClient` → `HttpCalaClient` (real `POST https://api.cala.ai/v1/knowledge/query`, `X-API-KEY`) and `MockCalaClient`. Healthcare vs finance are two query strings against the same `query(input)` method.
+- `FastinoClient` → `OpenAIFastinoClient` (OpenAI-backed now, structured JSON validated with zod) and `MockFastinoClient`. Swap to a real Fastino Hugging Face endpoint later without changing the run graph.
 
 ## Task 1: Create the local workspace and containers
 
@@ -135,10 +142,12 @@ git commit -m "build: add local development workspace"
 - Test: `packages/db/src/schema.test.ts`
 
 **Interfaces:**
-- Produces `Company`, `Person`, `Institution`, `SourceDocument`, `Entity`, `Relationship`, `CalaHealthcareSnapshot`, `CalaFinanceSnapshot`, `HealthcareGate`, `Development`, `FinanceImpact`, `MomentumReport`, `AgentRun`, `DailyReport` types.
+- Produces `Company`, `Person`, `Institution`, `SourceDocument`, `Entity`, `Relationship`, `CalaEntity`, `CalaSnapshot`, `HealthcareGate`, `Development`, `ExpectedImpact`, `FinanceImpact`, `RelationPack`, `MomentumReport`, `AgentRun`, `DailyReport` types.
 - `Entity` includes `id`, `type` (`company` | `person` | `institution` | `paper` | `patent` | `clinical_trial` | `news`), `externalId`, `label`, and `properties`.
 - `Relationship` includes `id`, `type`, `fromEntityId`, `toEntityId`, `sourceDocumentId`, `evidenceUrl`, and `confidence`.
+- `CalaEntity` includes `id`, `entityType`, `name`, and `mentions`; `CalaSnapshot` includes `id`, `companyId`, `kind` (`healthcare` | `finance`), `input`, `entities`, `results`, and `createdAt`.
 - `HealthcareGate` includes `isNew`, `isRelevant`, `relevanceScore`, `rationale`, `developmentSummary`.
+- `ExpectedImpact` includes `direction` (`up` | `down` | `unclear`), `magnitude` (`low` | `medium` | `high`), `horizon`, `confidence`.
 - `FinanceImpact` includes `developmentSummary`, `potentialProductOrCatalyst`, `expectedImpact`, `rationale`, `evidenceIds`.
 - `AgentRun` includes `id`, `companyId`, `mode`, `status`, `phase` (`queued` | `fanout` | `relations` | `healthcare_gate` | `stopped` | `finance` | `completed` | `failed`), `error`, `counts`.
 - `MomentumReport` includes `companyId`, `thesis`, `events` (ordered precursor list with entity ids), `generatedAt`.
@@ -165,7 +174,7 @@ Expected: fail because the schema and repository do not exist.
 
 - [ ] **Step 3: Add the Drizzle schema, generated migrations, and typed contracts**
 
-Define the tables named in `planning.md` with Drizzle's typed PostgreSQL schema, enable `vector` through a generated migration, and enforce `UNIQUE(provider, provider_id)` on documents and `UNIQUE(type, external_id)` on entities. Use Drizzle's migration runner and insert API in `client.ts` and `seed.ts`. Seed twenty companies; give Moderna `displayOrder: 0` and all others increasing orders. Do not hand-author runtime SQL queries or duplicate the schema in a SQL statement array.
+Define the tables named in `planning.md` with Drizzle's typed PostgreSQL schema, enable `vector` through a generated migration, and enforce `UNIQUE(provider, provider_id)` on documents and `UNIQUE(type, external_id)` on entities. Include the run-graph tables `cala_snapshots` (with a `kind` column for healthcare vs finance), `healthcare_gates`, and `finance_impacts`. Use Drizzle's migration runner and insert API in `client.ts` and `seed.ts`. Seed twenty companies; give Moderna `displayOrder: 0` and all others increasing orders. Do not hand-author runtime SQL queries or duplicate the schema in a SQL statement array.
 
 - [ ] **Step 4: Run the test and migration**
 
@@ -188,8 +197,8 @@ Developer 1 does **not** call Cala, OpenAI, or Fastino. Developer 1 owns HTTP co
 
 **Files:**
 - Create: `apps/api/src/app.ts`, `apps/api/src/index.ts`
-- Create: `apps/api/src/routes/{companies,people,institutions,runs,reports}.ts`
-- Create: `packages/db/src/repositories/{companies,people,institutions,runs,reports,entities,snapshots,gates}.ts`
+- Create: `apps/api/src/routes/{companies,people,institutions,runs,reports,knowledge-graph}.ts`
+- Create: `packages/db/src/repositories/{companies,people,institutions,runs,reports,entities,snapshots,gates,finance-impacts}.ts`
 - Test: `apps/api/src/routes/{companies,runs,reports}.test.ts`
 
 **Interfaces:**
@@ -200,7 +209,8 @@ Developer 1 does **not** call Cala, OpenAI, or Fastino. Developer 1 owns HTTP co
 - `GET /people/:id` and `GET /institutions/:id` return the entity plus neighborhood summary.
 - `POST /runs` accepts `{ companyId: string, mode: 'seed' | 'delta' }` and returns `{ id, status: 'queued' }` with HTTP 202.
 - `GET /runs/:id` returns `{ id, status, phase, startedAt, finishedAt, error, counts }` where `counts` includes cala healthcare, documents, gate, and finance.
-- Repositories the worker calls: insert/update `source_documents`, `entities`, `relationships`, `cala_healthcare_snapshots`, `cala_finance_snapshots`, `healthcare_gates`, `finance_analyses`.
+- Repositories the worker calls: insert/update `source_documents`, `entities`, `relationships`, `cala_snapshots`, `healthcare_gates`, `finance_impacts`.
+- `GET /knowledge-graph?companyId=&types=&personId=&institutionId=` returns serialized nodes and edges from the Neo4j read model via `packages/graph` `neighborhood`; no route accepts Cypher.
 - `GET /reports/momentum/:companyId` returns the latest `MomentumReport` or 404.
 - `GET /companies/:id/developments` returns the latest `HealthcareGate` / development for that company.
 
@@ -243,13 +253,13 @@ git commit -m "feat(api): add directory timeline and run endpoints"
 
 **Owner:** Developer 2
 
-Adapters are the **tools** behind the OpenAI research agent. Tool names may change later; each adapter remains its own PR.
+Adapters are the **tools** behind the OpenAI research agent. Tool names may change later; each adapter remains its own PR. This pass ships a vertical slice: PubMed, ClinicalTrials, and news/IR. Patents, FDA, DailyMed, and SEC are deferred to follow-up PRs.
 
 **Files:**
 - Create: `packages/ingestion/src/types.ts`, `packages/ingestion/src/normalize.ts`
-- Create: `packages/ingestion/src/sources/{clinical-trials,pubmed,patents,fda,dailymed,sec,news}.ts`
+- Create: `packages/ingestion/src/sources/{pubmed,clinical-trials,news}.ts`
 - Create: `packages/agents/src/tools.ts` (thin LangChain tool wrappers; add as adapters land)
-- Test: `packages/ingestion/src/normalize.test.ts`, one `*.test.ts` per source adapter
+- Test: `packages/ingestion/src/normalize.test.ts`, one `*.test.ts` per source adapter (captured JSON fixtures)
 
 **Interfaces:**
 
@@ -264,7 +274,7 @@ export interface SourceAdapter {
 }
 ```
 
-Company-scoped fetch is the default. PubMed, patents, and news adapters may also return documents whose primary subject is a person or institution; `companyId` may be null until linking.
+Company-scoped fetch is the default. PubMed and news adapters may return documents whose primary subject is a person or institution; `companyId` may be null until linking.
 
 - [ ] **Step 1: Write the shared deduplication test**
 
@@ -282,7 +292,7 @@ Expected: fail because `contentHash` is not defined.
 
 - [ ] **Step 3: Implement the normalizer and adapters**
 
-Every adapter must use a provider ID when available (PMID, NCT id, patent number, accession number), set an explicit request timeout, return normalized documents, and throw a provider-scoped error that the workflow can record without aborting other providers.
+Every adapter must use a provider ID when available (PMID, NCT id, article id), set an explicit request timeout, return normalized documents, and throw a provider-scoped error that the workflow can record without aborting other providers.
 
 - [ ] **Step 4: Verify each adapter with captured API fixtures**
 
@@ -297,16 +307,16 @@ git add packages/ingestion/src/{types.ts,normalize.ts,sources/clinical-trials.ts
 git commit -m "feat(ingestion): add clinical trials source"
 ```
 
-Repeat with separate commits/PRs for PubMed, **patents**, FDA, DailyMed, SEC, and news (IR + healthcare feeds in the news adapter). Do not combine provider adapters.
+Repeat with separate commits/PRs for PubMed and news. Patents, FDA, DailyMed, and SEC are deferred; do not combine provider adapters.
 
 ## Task 5: Implement the LangGraph run: fan-out, gate, optional finance
 
 **Owner:** Developer 2
 
 **Files:**
-- Create: `packages/agents/src/models.ts`, `packages/agents/src/cala.ts`, `packages/agents/src/research.ts`, `packages/agents/src/relations.ts`, `packages/agents/src/healthcare.ts`, `packages/agents/src/finance.ts`, `packages/agents/src/workflow.ts`
+- Create: `packages/agents/src/models.ts` (OpenAI chat + embeddings, env), `packages/agents/src/cala.ts` (`CalaClient`, `HttpCalaClient`, `MockCalaClient`; `healthcareQuery`/`financeQuery` builders), `packages/agents/src/fastino.ts` (`FastinoClient`, `OpenAIFastinoClient`, `MockFastinoClient`; zod schemas), `packages/agents/src/research.ts`, `packages/agents/src/relations.ts`, `packages/agents/src/healthcare.ts`, `packages/agents/src/finance.ts`, `packages/agents/src/workflow.ts`, `packages/agents/src/deps.ts` (default wiring)
 - Create: `apps/worker/src/index.ts`, `apps/worker/src/scheduler.ts`
-- Test: `packages/agents/src/workflow.test.ts`, `packages/agents/src/healthcare.test.ts`, `packages/agents/src/finance.test.ts`
+- Test: `packages/agents/src/workflow.test.ts`, `packages/agents/src/fastino.test.ts`
 
 **Interfaces:**
 
@@ -323,34 +333,43 @@ export type WorkflowState = {
   financeImpactId: string | null;
   errors: string[];
 };
-export async function runIntelligenceWorkflow(runId: string): Promise<WorkflowState>;
+export type WorkflowDeps = { cala: CalaClient; fastino: FastinoClient; openai: OpenAIClient; repos: Repositories; graph: GraphProjector; tools: ResearchTool[] };
+export async function runIntelligenceWorkflow(runId: string, deps?: Partial<WorkflowDeps>): Promise<WorkflowState>;
 ```
 
-Nodes: **fan-out** (Cala healthcare ∥ OpenAI research agent + tools → Postgres → Neo4j project) → **join** → OpenAI relation pack → Fastino Healthcare (HF) → if `isNew && isRelevant` then Cala finance → Fastino Finance (HF) structured `FinanceImpact`; else stop.
+Nodes: **fan-out** (Cala healthcare ∥ OpenAI research agent + tools → Postgres → Neo4j project) → **join** → OpenAI relation pack → `FastinoClient.healthcareGate` → if `isNew && isRelevant` then Cala finance → `FastinoClient.financeImpact` structured `FinanceImpact`; else persist gate and stop with `phase = stopped`.
 
-OpenAI embeddings run inside the research path via `embed_and_upsert`. Merge on `(type, externalId)` when present; people merge on normalized name plus affiliation when confidence is high.
+OpenAI embeddings run inside the research path via `embed_and_upsert`. Merge on `(type, externalId)` when present. Every external service is injected via `deps`, so tests run with `MockCalaClient`, `MockFastinoClient`, in-memory repos, and a fake graph projector.
 
 - [ ] **Step 1: Write failing routing tests**
 
 ```ts
 it('runs Cala healthcare and research in parallel and does not call Cala finance before the gate', async () => {
-  await runIntelligenceWorkflow(runId);
-  expect(cala.healthcare).toHaveBeenCalled();
-  expect(cala.finance).not.toHaveBeenCalled();
+  const deps = mockDeps();
+  await runIntelligenceWorkflow(runId, deps);
+  expect(deps.cala.healthcareCalls).toBe(1);
+  expect(deps.cala.financeCalls).toBe(0);
 });
 
 it('stops without Cala finance when Fastino Healthcare returns not new or not relevant', async () => {
-  mockHealthcareGate({ isNew: true, isRelevant: false });
-  const state = await runIntelligenceWorkflow(runId);
+  const deps = mockDeps({ gate: { isNew: true, isRelevant: false } });
+  const state = await runIntelligenceWorkflow(runId, deps);
   expect(state.financeImpactId).toBeNull();
-  expect(cala.finance).not.toHaveBeenCalled();
+  expect(deps.cala.financeCalls).toBe(0);
 });
 
 it('calls Cala finance and Fastino Finance when the gate is new and relevant', async () => {
-  mockHealthcareGate({ isNew: true, isRelevant: true });
-  const state = await runIntelligenceWorkflow(runId);
-  expect(cala.finance).toHaveBeenCalled();
+  const deps = mockDeps({ gate: { isNew: true, isRelevant: true } });
+  const state = await runIntelligenceWorkflow(runId, deps);
+  expect(deps.cala.financeCalls).toBe(1);
   expect(state.financeImpactId).toBeTruthy();
+});
+
+it('records a failing research tool without aborting the Cala branch', async () => {
+  const deps = mockDeps({ failingTool: 'pubmed' });
+  const state = await runIntelligenceWorkflow(runId, deps);
+  expect(state.errors.some((e) => e.includes('pubmed'))).toBe(true);
+  expect(deps.cala.healthcareCalls).toBe(1);
 });
 ```
 
@@ -362,21 +381,21 @@ Expected: fail because the graph and clients do not exist.
 
 - [ ] **Step 3: Implement nodes and conditional edges**
 
-Use OpenAI for research tools and relation extract. Call Fastino only through Hugging Face Inference clients in `healthcare.ts` and `finance.ts`. Persist each node via Developer 1 repositories and update `agent_runs.phase` before the next node. A failed research tool is recorded and does not abort Cala healthcare.
+Use OpenAI for research tools and the relation pack. Call Fastino through the injected `FastinoClient` (OpenAI-backed now via `OpenAIFastinoClient`, swappable for a real Hugging Face endpoint). Persist each node via repositories and update `agent_runs.phase` before the next node. A failed research tool is recorded in `errors` and does not abort the Cala healthcare branch.
 
 - [ ] **Step 4: Add the daily scheduler and Run now bridge**
 
-`enqueueRun(runId)` calls `runIntelligenceWorkflow(runId)`. `scheduler.ts` enqueues a delta run once daily; the API route uses the same function.
+`enqueueRun(runId)` calls `runIntelligenceWorkflow(runId)` with default deps. `scheduler.ts` enqueues a delta run once daily; the API route uses the same function.
 
 - [ ] **Step 5: Verify the workflow**
 
 Run: `pnpm --filter @cala/agents test && pnpm --filter @cala/worker typecheck`
 
-Expected: pass for parallel fan-out, stop-on-gate, and finance path; one failed tool with remaining tools completing.
+Expected: pass for parallel fan-out, stop-on-gate, finance path, and one failed tool with the Cala branch completing.
 
 - [ ] **Step 6: Commit**
 
-Split if needed: Cala+OpenAI clients, then research agent, then Fastino gate + finance.
+Split if needed: Cala + Fastino clients, then research agent, then workflow.
 
 ```bash
 git add packages/agents apps/worker
@@ -388,9 +407,8 @@ git commit -m "feat(agents): fan out research and gate finance analysis"
 **Owner:** Developer 2
 
 **Files:**
-- Create: `packages/graph/src/client.ts`, `packages/graph/src/project.ts`, `packages/graph/src/queries.ts`
-- Create: `apps/api/src/routes/knowledge-graph.ts`
-- Test: `packages/graph/src/project.test.ts`, `apps/api/src/routes/knowledge-graph.test.ts`
+- Create: `packages/graph/src/client.ts` (neo4j driver factory + in-memory fake for tests), `packages/graph/src/project.ts`, `packages/graph/src/queries.ts`
+- Test: `packages/graph/src/project.test.ts`
 
 **Interfaces:**
 
@@ -402,13 +420,13 @@ export async function neighborhood(input: {
 }): Promise<{ nodes: Entity[]; edges: Relationship[] }>;
 ```
 
-- [ ] **Step 1: Write the idempotent projection test**
+- [ ] **Step 1: Write the idempotent projection test (fake driver)**
 
 ```ts
-it('merges a person-authored-paper edge once', async () => {
-  await projectRelationship(authoredEdgeId);
-  await projectRelationship(authoredEdgeId);
-  expect(await relationshipCount('AUTHORED')).toBe(1);
+it('merges the same relationship once', async () => {
+  await projectRelationship(edgeId);
+  await projectRelationship(edgeId);
+  expect(await relationshipCount('DEVELOPED_BY')).toBe(1);
 });
 ```
 
@@ -420,20 +438,34 @@ Expected: fail because the projection does not exist.
 
 - [ ] **Step 3: Implement read-model projection and graph query**
 
-The research agent must project **before** the relation step so Fastino Healthcare sees PostgreSQL and Neo4j. Use Neo4j `MERGE` with PostgreSQL IDs as stable external IDs. Keep evidence URL, source document ID, and confidence on every relationship. `GET /knowledge-graph` returns only serialized nodes and edges; no route accepts Cypher. Developer 1 may own the HTTP route; Developer 2 owns `project.ts` and `queries.ts`.
+The research path projects **before** the relation step so the gate sees PostgreSQL and Neo4j. Use Neo4j `MERGE` with PostgreSQL IDs as stable external IDs. Keep evidence URL, source document ID, and confidence on every relationship. Unit tests run against the in-memory fake driver; an optional integration test is gated on `NEO4J_URI`. The `GET /knowledge-graph` HTTP route is Developer 1's; Developer 2 owns `project.ts` and `queries.ts`. No route accepts Cypher.
 
 - [ ] **Step 4: Verify Neo4j behavior**
 
-Run: `pnpm --filter @cala/graph test && pnpm --filter @cala/api test knowledge-graph.test.ts`
+Run: `pnpm --filter @cala/graph test && pnpm --filter @cala/graph typecheck`
 
-Expected: pass.
+Expected: pass (fake driver); integration test skipped unless `NEO4J_URI` is set.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add packages/graph apps/api/src/routes/knowledge-graph.ts
+git add packages/graph
 git commit -m "feat(graph): project healthcare world relationships"
 ```
+
+## Task 6b: Wire the worker and a live Moderna demo
+
+**Owner:** Developer 2
+
+**Files:**
+- Create: `apps/worker/src/index.ts` (`enqueueRun(runId)` runs `runIntelligenceWorkflow` fire-and-forget, updating `agent_runs.phase`/`status`), `apps/worker/src/scheduler.ts` (minimal daily delta)
+- Modify: `apps/api/src/routes/runs.ts` — bind the route's `enqueueRun` to the worker at app startup; keep the no-op stub for existing API tests.
+- Create: `scripts/run-moderna.ts` — live end-to-end run for Moderna, gated on real `OPENAI_API_KEY` and `CALA_API_KEY`; not part of `pnpm test`.
+
+- [ ] **Step 1:** Wire `enqueueRun`; verify `pnpm --filter @cala/worker typecheck && pnpm --filter @cala/api test`.
+- [ ] **Step 2:** Run `pnpm typecheck && pnpm test` (mock-backed suite, no live keys).
+- [ ] **Step 3:** Optional: `docker compose -f infra/docker-compose.yml up -d`, then `pnpm tsx scripts/run-moderna.ts` to eyeball the gate and finance output.
+- [ ] **Step 4:** Commit `feat(worker): run intelligence workflow on enqueue`.
 
 ## Task 7: Build the graph explorer shell
 
@@ -648,9 +680,10 @@ git commit -m "docs: add local demo runbook"
 1. `build: add local development workspace`
 2. `feat(data): define healthcare graph records`
 3. `feat(api): add directory timeline and run endpoints` (split if needed)
-4. Seven independent source-adapter PRs (trials, pubmed, **patents**, fda, dailymed, sec, news)
-5. `feat(agents): fan out research and gate finance analysis` (split clients / research / Fastino if needed)
+4. Vertical-slice source-adapter PRs (pubmed, clinical-trials, news); patents, fda, dailymed, sec deferred
+5. `feat(agents): fan out research and gate finance analysis` (split Cala+Fastino clients / research / workflow if needed)
 6. `feat(graph): project healthcare world relationships`
+6b. `feat(worker): run intelligence workflow on enqueue`
 7. `feat(web): add healthcare knowledge graph explorer`
 8. `feat(web): show company people and research timeline`
 9. `feat(web): show company momentum reports`
@@ -670,6 +703,8 @@ Each PR description must use:
 
 ## Self-review
 
-- Scope coverage: POST /runs fan-out, Cala healthcare vs finance, OpenAI research tools, Fastino Hugging Face gate, Fastino finance structured output, PostgreSQL, Neo4j, Developer 1 persistence, Developer 2 agents, and the Moderna demo are assigned to tasks.
-- Parallelization: Tasks 3, 4, and 7 can begin as soon as Task 2 lands; Tasks 5, 6, 8, and 9 then progress on their respective streams.
+- Scope coverage: POST /runs fan-out, Cala healthcare vs finance (real `knowledge/query` client + mock), OpenAI research tools, Fastino gate and finance behind a swappable OpenAI-backed client, PostgreSQL, Neo4j, worker wiring, and the Moderna demo are assigned to tasks.
+- Developer 1 owns the run-graph contracts and tables (`cala_snapshots`, `healthcare_gates`, `finance_impacts`) in Task 2 and the `GET /knowledge-graph` route in Task 3; Developer 2 consumes them.
+- Developer 2 vertical slice: pubmed/clinical-trials/news adapters (Task 4), dependency-injected workflow (Task 5), Neo4j projection with a fake driver (Task 6), worker + live demo (Task 6b). Patents, FDA, DailyMed, SEC, people/institution linking, and momentum synthesis are explicit follow-ups.
+- Testability: every external service (Cala, Fastino, OpenAI, Neo4j) is injected, so `pnpm test` passes with mocks and in-memory repos; live keys are only needed for `scripts/run-moderna.ts`.
 - No placeholders: every task declares files, interfaces, a focused test, runnable commands, and a commit.
