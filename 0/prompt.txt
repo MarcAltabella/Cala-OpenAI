@@ -1,0 +1,3 @@
+we are going to redefine the plan with another perspective view of what we want, first of all, give me a brief summary for what is the project, the objective, the architecture, and sources. 
+
+we are going the change a bit the purpose + product, but i thing the architecture won't be affected very much
