@@ -1,22 +1,33 @@
+import { Bot } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Background, BackgroundVariant, Handle, Position, ReactFlow, ReactFlowProvider, type Node, type NodeProps } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import TaskRows, { type TaskRow } from './TaskRows';
+import { createAgentRun, getRun, getRunEvents, listCompanyRuns, type Run, type RunEvent, type RunPhase } from '../lib/api';
 import calaLogo from '../assets/cala-logo.png';
 import './AgentFlow.css';
 
 type StepStatus = 'pending' | 'running' | 'completed' | 'failed';
-type AgentNodeData = { id: string; title: string; summary: string; amount: string; status: StepStatus };
+type AgentNodeData = { id: string; title: string; summary: string; amount: string; status: StepStatus; rows: TaskRow[]; showTools: boolean };
 type AgentNode = Node<AgentNodeData, 'agent'>;
 
-const COL_WIDTH = 300;
+const COL_WIDTH = 280;
+const INPUT_X = -64;
 const PROCESS_Y = 36;
+const NODE_POSITIONS: Record<string, { x: number; y: number }> = {
+  sources: { x: INPUT_X, y: -50 },
+  cala: { x: INPUT_X, y: 360 },
+  health: { x: COL_WIDTH, y: 160 },
+  'cala-finance': { x: COL_WIDTH * 2, y: 160 },
+  impact: { x: COL_WIDTH * 3, y: 160 },
+  output: { x: COL_WIDTH * 4, y: 160 },
+};
 
 const PROCESS = [
   {
     id: 'sources',
-    title: 'Agent scraping website',
-    summary: 'Public research sources fan out',
+    title: 'Web research agent',
+    summary: 'Public research sources',
     amount: '4 tools',
     tools: [
       { key: 'pubmed', label: 'PubMed', amount: 'papers', status: 'done' as const, details: [{ label: 'Fetched PubMed deltas', meta: 'ok' }, { label: 'Papers normalized', meta: 'done' }] },
@@ -27,150 +38,207 @@ const PROCESS = [
   },
   {
     id: 'cala',
-    title: 'Cala response',
+    title: 'Cala healthcare query',
     summary: 'Healthcare intelligence retrieved',
-    amount: '3 tools',
+    amount: '1 tool',
     tools: [
       { key: 'cala-query', label: 'Cala healthcare query', amount: '1 call', status: 'done' as const, details: [{ label: 'Healthcare snapshot', meta: 'ok' }, { label: 'Entities returned', meta: 'done' }] },
-      { key: 'index', label: 'Entity extraction', amount: 'entities', status: 'running' as const, step: 2, details: [{ label: 'Companies and trials', meta: 'ok' }, { label: 'Graph upsert', meta: '68%' }] },
-      { key: 'snapshot', label: 'Source snapshot', amount: '1 pack', status: 'sequence' as const, step: 3, details: [{ label: 'Documents stored', meta: 'draft' }, { label: 'Ready for relations', meta: 'draft' }] },
     ] satisfies TaskRow[],
   },
   {
     id: 'health',
-    title: 'Healthcare updates',
-    summary: 'Relations and relevance evaluated',
-    amount: '3 tools',
+    title: 'Healthcare agent',
+    summary: 'Healthcare signal analysis',
+    amount: '2 tools',
     tools: [
-      { key: 'relations', label: 'Build relation pack', amount: '1 pack', status: 'done' as const, details: [{ label: 'Nodes and edges', meta: 'ok' }, { label: 'Brief drafted', meta: 'done' }] },
-      { key: 'index', label: 'Healthcare gate', amount: '1 score', status: 'running' as const, step: 2, details: [{ label: 'Fastino relevance', meta: 'ok' }, { label: 'Signal check', meta: '68%' }] },
-      { key: 'signal', label: 'New signal check', amount: '1 gate', status: 'sequence' as const, step: 3, details: [{ label: 'isNew / isRelevant', meta: 'draft' }, { label: 'Route to finance', meta: 'draft' }] },
+      { key: 'relations', label: 'Build relationships', amount: 'tool', status: 'pending' as const, step: 1, details: [] },
+      { key: 'index', label: 'Evaluate healthcare signal', amount: 'tool', status: 'pending' as const, step: 2, details: [] },
     ] satisfies TaskRow[],
   },
   {
-    id: 'finance',
-    title: 'Financial output',
-    summary: 'Impact assessment and report',
-    amount: '3 tools',
+    id: 'cala-finance',
+    title: 'Cala finance query',
+    summary: 'Financial intelligence retrieved',
+    amount: '1 tool',
     tools: [
-      { key: 'cala-finance', label: 'Cala finance query', amount: '1 call', status: 'done' as const, details: [{ label: 'Finance snapshot', meta: 'ok' }, { label: 'Entities returned', meta: 'done' }] },
-      { key: 'index', label: 'Financial impact', amount: '1 score', status: 'running' as const, step: 2, details: [{ label: 'Impact assessed', meta: 'ok' }, { label: 'Watch list draft', meta: '68%' }] },
-      { key: 'watch', label: 'Watch-list recommendation', amount: '1 rec', status: 'sequence' as const, step: 3, details: [{ label: 'Recommendation', meta: 'draft' }, { label: 'Report ready', meta: 'draft' }] },
+      { key: 'cala-finance', label: 'Cala finance query', amount: '1 call', status: 'pending' as const, step: 1, details: [{ label: 'Finance snapshot', meta: 'pending' }, { label: 'Entities returned', meta: 'pending' }] },
+    ] satisfies TaskRow[],
+  },
+  {
+    id: 'impact',
+    title: 'Financial agent',
+    summary: 'Financial impact analysis',
+    amount: '1 tool',
+    tools: [
+      { key: 'index', label: 'Financial impact', amount: '1 score', status: 'pending' as const, step: 1, details: [{ label: 'Impact assessed', meta: 'pending' }, { label: 'Watch list draft', meta: 'pending' }] },
+    ] satisfies TaskRow[],
+  },
+  {
+    id: 'output',
+    title: 'Financial output',
+    summary: 'Report and references assembled',
+    amount: 'report',
+    tools: [
+      { key: 'report', label: 'Report ready', amount: 'output', status: 'pending' as const, step: 1, details: [{ label: 'Report persisted', meta: 'pending' }, { label: 'References attached', meta: 'pending' }] },
     ] satisfies TaskRow[],
   },
 ] as const;
-
-const DEMO_DELAYS_MS = [700, 1400, 1400, 1400, 1200] as const;
 
 function CalaMark() {
   return <img className="agent-flow-cala-mark" src={calaLogo} alt="Cala" />;
 }
 
 const AgentNodeCard = memo(({ data }: NodeProps<AgentNode>) => (
-  <div className={`agent-flow-node is-${data.status}`}>
-    <Handle type="target" position={Position.Left} className="agent-flow-handle" />
-    <div className="agent-flow-trigger">
-      <span className={`agent-flow-status is-${data.status} ${data.id === 'cala' ? 'is-cala' : ''}`}>
-        {data.id === 'cala' ? <CalaMark /> : data.status === 'completed' ? '✓' : data.status === 'running' ? '•' : '·'}
-      </span>
-      <span className="agent-flow-copy">
-        <strong>{data.title}</strong>
-        <small>{data.summary}</small>
-      </span>
-      <span className="agent-flow-amount">{data.status === 'completed' ? 'done' : data.amount}</span>
+  <div className="agent-flow-node-stack">
+    <div className={`agent-flow-node is-${data.status}`}>
+      <Handle type="target" position={Position.Left} className="agent-flow-handle" />
+      <div className="agent-flow-trigger">
+        <span className={`agent-flow-status ${data.id === 'cala' || data.id === 'cala-finance' ? 'is-cala' : ''}`}>
+          {data.id === 'cala' || data.id === 'cala-finance' ? <CalaMark /> : <Bot size={17} aria-label="Agent" />}
+        </span>
+        <span className="agent-flow-copy">
+          <strong>{data.title}</strong>
+          <small>{data.summary}</small>
+        </span>
+        <span className="agent-flow-amount">{data.amount}</span>
+      </div>
+      <Handle type="source" position={Position.Right} className="agent-flow-handle" />
     </div>
-    <Handle type="source" position={Position.Right} className="agent-flow-handle" />
+    {data.showTools && <TaskRows variant="List" rows={data.rows} animate={false} className="agent-flow-task-rows" />}
   </div>
 ));
 
 const nodeTypes = { agent: AgentNodeCard };
 
-const processEdges = PROCESS.slice(0, -1).map((item, index) => ({
-  id: `edge-${item.id}`,
-  source: item.id,
-  target: PROCESS[index + 1].id,
+const processEdges = [
+  ['sources', 'health'],
+  ['cala', 'health'],
+  ['health', 'cala-finance'],
+  ['cala-finance', 'impact'],
+  ['impact', 'output'],
+].map(([source, target]) => ({
+  id: `edge-${source}-${target}`,
+  source,
+  target,
   type: 'smoothstep',
   animated: true,
-  style: { stroke: '#9fb2a4', strokeWidth: 1.8 },
+  style: { stroke: '#b8c4ba', strokeWidth: 1.4, strokeDasharray: '4 6' },
 }));
 
-function statusesForTick(tick: number): StepStatus[] {
-  if (tick <= 0) return PROCESS.map(() => 'pending');
-  if (tick > PROCESS.length) return PROCESS.map(() => 'completed');
-  return PROCESS.map((_, index) => {
-    if (index < tick - 1) return 'completed';
-    if (index === tick - 1) return 'running';
-    return 'pending';
-  });
+function statusesForPhase(phase: RunPhase | null): StepStatus[] {
+  if (!phase || phase === 'queued') return PROCESS.map(() => 'pending');
+  if (phase === 'failed') return PROCESS.map(() => 'failed');
+  if (phase === 'completed') return PROCESS.map(() => 'completed');
+  if (phase === 'stopped') return ['completed', 'completed', 'completed', 'pending', 'pending', 'pending'];
+  if (phase === 'fanout') return ['running', 'running', 'pending', 'pending', 'pending', 'pending'];
+  if (phase === 'relations' || phase === 'healthcare_gate') return ['completed', 'completed', 'running', 'pending', 'pending', 'pending'];
+  if (phase === 'finance') return ['completed', 'completed', 'completed', 'running', 'pending', 'pending'];
+  return ['completed', 'completed', 'completed', 'completed', 'running', 'pending'];
 }
 
-export function AgentFlow({ onViewResults }: { onViewResults?: () => void }) {
-  const [tick, setTick] = useState(1);
-  const [playing, setPlaying] = useState(true);
-  const statuses = statusesForTick(tick);
-  const running = playing && tick > 0 && tick <= PROCESS.length;
-  const complete = tick > PROCESS.length;
+export function AgentFlow({ companyId, onViewResults }: { companyId: string; onViewResults?: () => void }) {
+  const [run, setRun] = useState<Run | null>(null);
+  const [events, setEvents] = useState<RunEvent[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const statuses = statusesForPhase(run?.phase ?? null);
+  const running = run?.status === 'queued' || run?.status === 'running';
+  const complete = run?.status === 'completed';
+  const statusById = Object.fromEntries(PROCESS.map((item, index) => [item.id, statuses[index]]));
+  const backendTool = (processId: string, key: string) => ({
+    sources: { pubmed: 'pubmed', index: 'clinicaltrials', news: 'news', web: 'web_news' },
+    cala: { 'cala-query': 'cala_healthcare' },
+    health: { relations: 'relation_pack', index: 'healthcare_gate' },
+    'cala-finance': { 'cala-finance': 'cala_finance' },
+    impact: { index: 'finance_impact' },
+    output: { report: null },
+  }[processId] as Record<string, string>)[key];
+  const rowsFor = (process: typeof PROCESS[number]) => process.tools.map((tool) => {
+    const name = backendTool(process.id, tool.key);
+    const event = [...events].reverse().find((item) => item.tool === name);
+    const status = process.id === 'output' && complete ? 'done' : event?.kind === 'tool_result' ? 'done' : event?.kind === 'error' ? 'failed' : event?.kind === 'tool_call' ? 'running' : 'pending';
+    const summary = event?.tool === 'relation_pack' ? 'Healthcare context assembled' : event?.tool === 'healthcare_gate' ? 'Healthcare signal evaluated' : event?.summary;
+    return { ...tool, details: event ? [{ label: summary ?? tool.label, meta: event.kind.replace('tool_', '') }] : [], status: status as TaskRow['status'] };
+  });
+  const edges = processEdges.map((edge) => {
+    const completed = statusById[edge.target] === 'completed';
+    const active = statusById[edge.source] === 'running' || statusById[edge.target] === 'running';
+    return { ...edge, className: completed ? 'agent-flow-edge-completed' : 'agent-flow-edge-active', animated: running && active && !completed, style: { ...edge.style, stroke: completed ? '#4caf70' : '#b8c4ba' } };
+  });
 
   const nodes = useMemo<AgentNode[]>(
     () => PROCESS.map((item, index) => ({
       id: item.id,
       type: 'agent',
-      position: { x: index * COL_WIDTH, y: PROCESS_Y },
-      data: { ...item, status: statuses[index] },
+      position: NODE_POSITIONS[item.id] ?? { x: index * COL_WIDTH, y: PROCESS_Y },
+      data: { ...item, status: statuses[index], rows: rowsFor(item), showTools: Boolean(run) },
     })),
-    [statuses],
+    [statuses, events, complete, run],
   );
 
   useEffect(() => {
-    if (!playing) return;
-    if (tick > PROCESS.length) {
-      setPlaying(false);
-      return;
-    }
-    const delay = DEMO_DELAYS_MS[Math.min(tick, DEMO_DELAYS_MS.length - 1)];
-    const timer = setTimeout(() => setTick((value) => value + 1), delay);
+    let active = true;
+    listCompanyRuns(companyId).then(async (runs) => {
+      const latest = runs[0];
+      if (!latest || !active) return;
+      const latestEvents = await getRunEvents(latest.id);
+      if (active) { setRun(latest); setEvents(latestEvents); }
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [companyId]);
+
+  useEffect(() => {
+    if (!run || !running) return;
+    const timer = setTimeout(() => {
+      Promise.all([getRun(run.id), getRunEvents(run.id)]).then(([nextRun, nextEvents]) => { setRun(nextRun); setEvents(nextEvents); }).catch((err: unknown) => setError(err instanceof Error ? err.message : 'Run status unavailable'));
+    }, 1000);
     return () => clearTimeout(timer);
-  }, [playing, tick]);
+  }, [run, running]);
+
+  const startRun = async () => {
+    setError(null);
+    setRun(null);
+    setEvents([]);
+    try {
+      const queued = await createAgentRun(companyId);
+      const [nextRun, nextEvents] = await Promise.all([getRun(queued.id), getRunEvents(queued.id)]);
+      setRun(nextRun);
+      setEvents(nextEvents);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start agent run');
+    }
+  };
 
   return (
     <div className="agent-flow">
       <div className="agent-flow-heading">
-        <button type="button" className="agent-flow-run" onClick={() => { setPlaying(true); setTick(1); }} disabled={running}>
+        <button type="button" className="agent-flow-run" onClick={startRun} disabled={running}>
           {running ? 'Running…' : complete ? 'Run again' : 'Run agent'}
         </button>
       </div>
+      {(error || run?.error) && <p className="agent-flow-error">{error ?? run?.error}</p>}
       <div className="agent-flow-canvas">
         <ReactFlowProvider>
           <ReactFlow
             nodes={nodes}
-            edges={processEdges}
+            edges={edges}
             nodeTypes={nodeTypes}
-            defaultViewport={{ x: 28, y: 0, zoom: 1 }}
+            fitView
+            fitViewOptions={{ padding: 0.02, maxZoom: 1.2 }}
             minZoom={0.5}
             maxZoom={1.2}
             nodesDraggable={false}
             nodesConnectable={false}
-            panOnDrag={false}
-            panOnScroll={false}
-            zoomOnScroll={false}
-            zoomOnPinch={false}
+            panOnDrag
+            panOnScroll
+            zoomOnScroll
+            zoomOnPinch
             zoomOnDoubleClick={false}
-            preventScrolling
             proOptions={{ hideAttribution: true }}
             style={{ width: '100%', height: '100%' }}
           >
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#e1e7e2" />
           </ReactFlow>
         </ReactFlowProvider>
-      </div>
-      <div className="agent-flow-capsules">
-        {PROCESS.map((process, index) => (
-          <div className={`agent-flow-capsule-col is-${statuses[index]}`} key={process.id}>
-            {statuses[index] !== 'pending' && (
-              <TaskRows variant="Capsules" rows={[...process.tools]} className="agent-flow-task-rows" />
-            )}
-          </div>
-        ))}
       </div>
       {complete && (
         <button type="button" className="agent-flow-results" onClick={onViewResults}>

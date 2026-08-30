@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpDown, ExternalLink, Plus, Search } from 'lucide-react';
+import { ArrowUpDown, ExternalLink, Search } from 'lucide-react';
 import { listCompanies, type Company } from '../lib/api';
 
 type Strength = 'strong' | 'medium' | 'weak';
@@ -78,7 +78,6 @@ export function CompaniesPage({ onOpen }: { onOpen: (id: string) => void }) {
           <h1>Companies</h1>
           <p>Healthcare companies and the latest signals worth tracking.</p>
         </div>
-        <button className="records-add-button"><Plus size={16} /> Add company</button>
       </header>
       <div className="records-toolbar">
         <label className="records-search">

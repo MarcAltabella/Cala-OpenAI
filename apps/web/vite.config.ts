@@ -8,10 +8,10 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: {
     proxy: {
-      '/companies': 'http://localhost:3000',
-      '/knowledge-graph': 'http://localhost:3000',
-      '/health': 'http://localhost:3000',
-      '/runs': 'http://localhost:3000',
+      '/companies': 'http://localhost:3002',
+      '/knowledge-graph': 'http://localhost:3002',
+      '/health': 'http://localhost:3002',
+      '/runs': 'http://localhost:3002',
     },
   },
 });

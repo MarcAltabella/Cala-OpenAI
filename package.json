@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "dev": "pnpm --parallel --filter @cala/api --filter @cala/web --filter @cala/worker dev",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "demo:moderna": "tsx scripts/run-moderna.ts",

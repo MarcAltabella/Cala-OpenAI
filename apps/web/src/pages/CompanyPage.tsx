@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { listCompanies, type Company } from '../lib/api';
-import { RecommendationCard } from '../components/RecommendationCard';
-import { ContextCards } from '../components/ContextCards';
+import { getCompanyOutput, listCompanies, type Company, type CompanyOutput } from '../lib/api';
 import { AgentFlow } from '../components/AgentFlow';
+import ContextCards from '../components/ContextCards';
 
 export function CompanyPage({ companyId, onBack }: { companyId: string; onBack: () => void }) {
   const [company, setCompany] = useState<Company>();
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState('runs');
+  const [output, setOutput] = useState<CompanyOutput | null>(null);
 
   useEffect(() => {
     setError(null);
@@ -23,6 +23,11 @@ export function CompanyPage({ companyId, onBack }: { companyId: string; onBack: 
       .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load company'));
   }, [companyId]);
 
+  useEffect(() => {
+    if (tab !== 'outputs' || !company) return;
+    getCompanyOutput(company.id).then(setOutput).catch(() => setOutput(null));
+  }, [tab, company]);
+
   if (error) return <p>Could not load from Postgres: {error}</p>;
   if (!company) return <p>Loading company…</p>;
 
@@ -32,19 +37,17 @@ export function CompanyPage({ companyId, onBack }: { companyId: string; onBack: 
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList><TabsTrigger value="runs">Agent runs</TabsTrigger><TabsTrigger value="outputs">Outputs</TabsTrigger></TabsList>
       <TabsContent value="runs" className="runs-flow-panel" keepMounted>
-        <AgentFlow onViewResults={() => setTab('outputs')} />
+        <AgentFlow companyId={company.id} onViewResults={() => setTab('outputs')} />
       </TabsContent>
       <TabsContent value="outputs" className="output-document">
-        <h2>{company.name} development report</h2>
-        <p>A new development was detected in the company’s research and clinical footprint. The evidence trail indicates meaningful progress with potential downstream financial relevance.</p>
-        <h3>Healthcare evaluation</h3>
-        <p>The phase 3 melanoma vaccine signal is supported by recent trial activity and publication evidence. The linked records suggest continued momentum in Moderna’s oncology pipeline.</p>
-        <h3>Financial evaluation</h3>
-        <p>The development creates a meaningful monitoring event for investors tracking clinical readouts, regulatory milestones, and potential pipeline value.</p>
-        <h3>Evidence summary</h3>
-        <p>Publications, clinical trials, regulatory filings, and company news were cross-checked and linked to the knowledge graph.</p>
-        <ContextCards />
-        <RecommendationCard />
+        {!output ? <p>No completed report is available yet. Run the agents to generate one.</p> : <>
+          <h2>{company.name} development report</h2>
+          <p>Run {output.run.id} · {output.run.phase}</p>
+          {output.healthcareGate && <section><h3>Healthcare evaluation</h3><p>{output.healthcareGate.developmentSummary}</p><p>{output.healthcareGate.rationale}</p><p>Relevance score: {Number(output.healthcareGate.relevanceScore).toFixed(2)} · {output.healthcareGate.isNew ? 'New' : 'Existing'} · {output.healthcareGate.isRelevant ? 'Relevant' : 'Not relevant'}</p></section>}
+          {output.financeImpact && <section><h3>Financial evaluation</h3><p>{output.financeImpact.developmentSummary}</p><p>{output.financeImpact.rationale}</p><p>{output.financeImpact.potentialProductOrCatalyst} · {output.financeImpact.expectedImpact.direction} impact · {output.financeImpact.expectedImpact.magnitude} magnitude · {output.financeImpact.expectedImpact.horizon}</p></section>}
+          {output.snapshots.length > 0 && <section><h3>Cala snapshots</h3>{output.snapshots.map((snapshot) => <p key={snapshot.id}><strong>{snapshot.kind}</strong>: {snapshot.input} · {snapshot.results.length} results · {snapshot.entities.length} entities</p>)}</section>}
+          <section>{output.references.length === 0 ? <><h3>References</h3><p>No source references were stored for this run.</p></> : <ContextCards labels={{ header: 'References', count: '' }} chunks={output.references.map((reference) => ({ title: (reference.excerpt.split('..')[0] || reference.providerId).slice(0, 96), chars: `${reference.excerpt.length.toLocaleString()} characters`, body: reference.excerpt, source: `${reference.provider} · ${reference.providerId}`, sourceUrl: reference.url, badge: 'WWW', tone: 'bg-green' }))} />}</section>
+        </>}
       </TabsContent>
     </Tabs>
   </>;
