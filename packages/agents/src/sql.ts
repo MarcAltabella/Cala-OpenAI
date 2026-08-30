@@ -55,46 +55,6 @@ export type GeneratedSql = {
   graphFilter: GraphAskFilter;
 };
 
-export type HardcodedSqlResult = GeneratedSql & {
-  rows: Record<string, unknown>[];
-  rowCount: number;
-};
-
-const MODERNA_SQL = `SELECT c.name, c.ticker, c.recency,
-  count(*) FILTER (WHERE e.entity_type = 'clinical_trial') AS trials,
-  count(*) FILTER (WHERE e.entity_type = 'paper') AS papers,
-  count(*) FILTER (WHERE e.entity_type = 'news') AS news
-FROM companies c
-JOIN entities ce ON ce.entity_type = 'company' AND ce.label = c.name
-JOIN relationships r ON r.to_entity_id = ce.id OR r.from_entity_id = ce.id
-JOIN entities e ON e.id = CASE WHEN r.to_entity_id = ce.id THEN r.from_entity_id ELSE r.to_entity_id END
-WHERE c.ticker = 'MRNA'
-GROUP BY c.name, c.ticker, c.recency
-LIMIT 20`;
-
-const TRIAL_SQL = `SELECT e.label AS trial, e.external_id, c.name AS sponsor, c.ticker, sd.url, sd.published_at
-FROM entities e
-JOIN relationships r ON r.from_entity_id = e.id AND r.relationship_type = 'TRIAL_BY'
-JOIN entities ce ON ce.id = r.to_entity_id AND ce.entity_type = 'company'
-JOIN companies c ON c.name = ce.label
-LEFT JOIN source_documents sd ON sd.provider = 'clinicaltrials' AND sd.provider_id = replace(e.external_id, 'clinicaltrials:', '')
-WHERE e.entity_type = 'clinical_trial'
-  AND (e.label ILIKE '%mRNA-4157%' OR e.external_id = 'clinicaltrials:NCT03897881')
-ORDER BY sd.published_at DESC NULLS LAST
-LIMIT 20`;
-
-const TRIALS_NEWS_SQL = `SELECT e.entity_type, e.label, e.external_id, r.relationship_type, sd.url
-FROM companies c
-JOIN entities ce ON ce.entity_type = 'company' AND ce.label = c.name
-JOIN relationships r ON r.to_entity_id = ce.id OR r.from_entity_id = ce.id
-JOIN entities e ON e.id = CASE WHEN r.to_entity_id = ce.id THEN r.from_entity_id ELSE r.to_entity_id END
-LEFT JOIN source_documents sd ON sd.id = r.evidence_document_id
-WHERE c.ticker = 'MRNA'
-  AND e.entity_type IN ('clinical_trial', 'news')
-  AND r.relationship_type IN ('TRIAL_BY', 'REPORTED_ON')
-ORDER BY e.entity_type, e.label
-LIMIT 100`;
-
 const ENTITY_ALIASES: Array<{ type: string; pattern: RegExp; relationships: string[] }> = [
   { type: 'clinical_trial', pattern: /clinical[_\s-]?trials?|nct\d+|keynote/i, relationships: ['TRIAL_BY'] },
   { type: 'news', pattern: /news|press|headline|reported/i, relationships: ['REPORTED_ON'] },
@@ -153,109 +113,6 @@ export function inferGraphFilter(question: string): GraphAskFilter {
   });
 }
 
-export const HARDCODED_SQL_DEMOS: Array<{
-  id: string;
-  match: RegExp;
-  explanation: string;
-  sql: string;
-  rows: Record<string, unknown>[];
-  graphFilter: GraphAskFilter;
-}> = [
-  {
-    id: 'moderna-trials-news',
-    match: /moderna[\s\S]{0,80}(clinical[_\s-]?trials?|trials?).{0,40}news|news.{0,40}(clinical[_\s-]?trials?|trials?).{0,40}moderna|(clinical[_\s-]?trials?|trials?).{0,40}news.{0,40}moderna/i,
-    explanation: 'Filtered the graph to Moderna clinical trials and related news.',
-    sql: TRIALS_NEWS_SQL,
-    graphFilter: {
-      companyTicker: 'MRNA',
-      companyName: 'Moderna',
-      entityTypes: ['company', 'clinical_trial', 'news'],
-      relationshipTypes: ['TRIAL_BY', 'REPORTED_ON'],
-    },
-    rows: [
-      {
-        entity_type: 'clinical_trial',
-        label: 'An Efficacy Study of Adjuvant Treatment With the Personalized Cancer Vaccine mRNA-4157 and Pembrolizumab in Participants With High-Risk Melanoma (KEYNOTE-942)',
-        external_id: 'clinicaltrials:NCT03897881',
-        relationship_type: 'TRIAL_BY',
-        url: 'https://clinicaltrials.gov/study/NCT03897881',
-      },
-      {
-        entity_type: 'news',
-        label: 'Moderna, Merck vaccine cuts recurrence and spread of ... - Reuters',
-        external_id: null,
-        relationship_type: 'REPORTED_ON',
-        url: null,
-      },
-    ],
-  },
-  {
-    id: 'clinical-trial',
-    match: /clinical[_\s-]?trial|keynote[-\s]?942|nct03897881|mRNA-4157|melanoma vaccine/i,
-    explanation: 'KEYNOTE-942 / mRNA-4157 melanoma trial linked to Moderna in the knowledge graph.',
-    sql: TRIAL_SQL,
-    graphFilter: {
-      companyTicker: 'MRNA',
-      companyName: 'Moderna',
-      entityTypes: ['company', 'clinical_trial'],
-      relationshipTypes: ['TRIAL_BY'],
-      labelQuery: 'mRNA-4157',
-    },
-    rows: [
-      {
-        trial: 'An Efficacy Study of Adjuvant Treatment With the Personalized Cancer Vaccine mRNA-4157 and Pembrolizumab in Participants With High-Risk Melanoma (KEYNOTE-942)',
-        external_id: 'clinicaltrials:NCT03897881',
-        sponsor: 'Moderna',
-        ticker: 'MRNA',
-        url: 'https://clinicaltrials.gov/study/NCT03897881',
-        published_at: '2019-04-01T00:00:00.000Z',
-      },
-      {
-        trial: 'Safety, Tolerability, and Immunogenicity of mRNA-4157 Alone and in Combination in Participants With Solid Tumors',
-        external_id: 'clinicaltrials:NCT03313778',
-        sponsor: 'Moderna',
-        ticker: 'MRNA',
-        url: 'https://clinicaltrials.gov/study/NCT03313778',
-        published_at: '2017-10-18T00:00:00.000Z',
-      },
-    ],
-  },
-  {
-    id: 'moderna',
-    match: /\bmoderna\b|\bmrna\b/i,
-    explanation: 'Moderna watchlist profile with linked trial, paper, and news counts from the knowledge graph.',
-    sql: MODERNA_SQL,
-    graphFilter: {
-      companyTicker: 'MRNA',
-      companyName: 'Moderna',
-      entityTypes: ['company', 'clinical_trial', 'paper', 'news'],
-      relationshipTypes: ['TRIAL_BY', 'RESEARCH_ON', 'REPORTED_ON'],
-    },
-    rows: [
-      {
-        name: 'Moderna',
-        ticker: 'MRNA',
-        recency: 'high',
-        trials: 50,
-        papers: 20,
-        news: 12,
-      },
-    ],
-  },
-];
-
-export function matchHardcodedSql(question: string): HardcodedSqlResult | null {
-  const demo = HARDCODED_SQL_DEMOS.find((entry) => entry.match.test(question));
-  if (!demo) return null;
-  return {
-    sql: assertReadOnlySelect(demo.sql),
-    explanation: demo.explanation,
-    rows: demo.rows,
-    rowCount: demo.rows.length,
-    graphFilter: normalizeGraphFilter(demo.graphFilter),
-  };
-}
-
 function parseSqlResponse(raw: string): GeneratedSql {
   try {
     const parsed = JSON.parse(raw) as Partial<GeneratedSql>;
@@ -280,11 +137,6 @@ function parseSqlResponse(raw: string): GeneratedSql {
 }
 
 export async function generateSqlQuery(chat: ChatModel, question: string): Promise<GeneratedSql> {
-  const hardcoded = matchHardcodedSql(question);
-  if (hardcoded) {
-    return { sql: hardcoded.sql, explanation: hardcoded.explanation, graphFilter: hardcoded.graphFilter };
-  }
-
   const inferred = inferGraphFilter(question);
   const raw = await chat.complete({
     system: `You write PostgreSQL for a healthcare market-intelligence database and also describe how to filter the Neo4j knowledge-graph UI.

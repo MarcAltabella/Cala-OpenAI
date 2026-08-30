@@ -16,7 +16,7 @@ SET r.relationshipType = $relationshipType,
     r.toEntityId = $toEntityId
 `;
 
-// One-hop neighborhood around a seed entity, optionally filtered by relationship type.
+// One-hop neighborhood around a focused entity, optionally filtered by relationship type.
 export const NEIGHBORHOOD = `
 MATCH (seed:Entity)-[r:REL]-(other:Entity)
 WHERE ($seedId IS NULL OR seed.id = $seedId OR seed.sourceId = $seedId)

@@ -1,7 +1,7 @@
 export type Company = { id: string; name: string; ticker: string | null; displayOrder: number; recency?: 'mid' | 'high' };
 export type RunStatus = 'queued' | 'running' | 'completed' | 'failed';
 export type RunPhase = 'queued' | 'fanout' | 'relations' | 'healthcare_gate' | 'stopped' | 'finance' | 'completed' | 'failed';
-export type Run = { id: string; companyId: string | null; mode: 'seed' | 'delta'; status: RunStatus; phase: RunPhase; startedAt: string | null; finishedAt: string | null; error: string | null; counts: Record<string, number> };
+export type Run = { id: string; companyId: string | null; mode: 'delta'; status: RunStatus; phase: RunPhase; startedAt: string | null; finishedAt: string | null; error: string | null; counts: Record<string, number> };
 export type RunEvent = { id: string; runId?: string; phase: RunPhase; kind: 'phase' | 'tool_call' | 'tool_result' | 'error'; tool: string | null; summary: string | null; input?: Record<string, unknown>; output?: Record<string, unknown>; createdAt: string };
 export type QueuedRun = { id: string; status: 'queued' };
 export type GraphEntity = { id: string; entityType: string; label: string; sourceId: string | null };
@@ -34,7 +34,7 @@ async function json<T>(url: string): Promise<T> {
 
 export async function listCompanies() { return json<Company[]>('/companies'); }
 export async function listCompanyRuns(companyId: string) { return json<Run[]>(`/companies/${encodeURIComponent(companyId)}/agent-runs`); }
-export async function createAgentRun(companyId: string, mode: 'seed' | 'delta' = 'delta') { return requestJson<QueuedRun>('/runs', { method: 'POST', body: JSON.stringify({ companyId, mode }) }); }
+export async function createAgentRun(companyId: string) { return requestJson<QueuedRun>('/runs', { method: 'POST', body: JSON.stringify({ companyId }) }); }
 export async function getRun(runId: string) { return requestJson<Run>(`/runs/${encodeURIComponent(runId)}`); }
 export async function getRunEvents(runId: string) { return requestJson<RunEvent[]>(`/runs/${encodeURIComponent(runId)}/events`); }
 

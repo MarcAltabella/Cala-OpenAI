@@ -5,10 +5,11 @@ import type { Repositories } from './types.js';
 let cached: Repositories | undefined;
 
 function useMemory(): boolean {
-  return Boolean(process.env.VITEST) || !process.env.DATABASE_URL;
+  return Boolean(process.env.VITEST);
 }
 
 export function createRepositoriesFromEnv(): Repositories {
+  if (!useMemory() && !process.env.DATABASE_URL) throw new Error('DATABASE_URL is required to create Postgres repositories');
   if (!cached) cached = useMemory() ? createInMemoryRepositories() : createPostgresRepositories();
   return cached;
 }

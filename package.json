@@ -3,6 +3,13 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "dev": "tsx scripts/dev.ts",
+    "dev:web": "pnpm --filter @cala/web dev",
+    "dev:api": "pnpm --filter @cala/api dev",
+    "dev:worker": "pnpm --filter @cala/worker dev",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:migrate": "pnpm --filter @cala/db migrate",
+    "start": "pnpm dev",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"
   },

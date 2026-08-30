@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { assertReadOnlySelect } from '@cala/db';
 import { StubChatModel } from './models.js';
-import { generateSqlQuery, inferGraphFilter, matchHardcodedSql } from './sql.js';
+import { generateSqlQuery, inferGraphFilter } from './sql.js';
 
 describe('assertReadOnlySelect', () => {
   it('accepts a select and strips a trailing semicolon', () => {
@@ -23,14 +23,6 @@ describe('graph ask filters', () => {
     });
   });
 
-  it('returns a hardcoded filter for Moderna trials and news', () => {
-    const result = matchHardcodedSql('show me the moderna clinical trials and news related');
-    expect(result?.graphFilter).toMatchObject({
-      companyTicker: 'MRNA',
-      entityTypes: ['company', 'clinical_trial', 'news'],
-      relationshipTypes: ['TRIAL_BY', 'REPORTED_ON'],
-    });
-  });
 });
 
 describe('generateSqlQuery', () => {
@@ -47,17 +39,4 @@ describe('generateSqlQuery', () => {
     expect(chat.calls[0]?.user).toBe('show all companies');
   });
 
-  it('returns hardcoded Moderna and clinical-trial demos without calling the model', async () => {
-    const chat = new StubChatModel(() => {
-      throw new Error('should not call the model');
-    });
-    const moderna = await generateSqlQuery(chat, 'Show Moderna graph coverage');
-    expect(moderna.sql).toMatch(/ticker = 'MRNA'/i);
-    expect(moderna.graphFilter.companyTicker).toBe('MRNA');
-    expect(chat.calls).toHaveLength(0);
-
-    const trial = await generateSqlQuery(chat, 'Find the KEYNOTE-942 clinical trial');
-    expect(trial.sql).toMatch(/NCT03897881|mRNA-4157/i);
-    expect(trial.graphFilter.entityTypes).toEqual(expect.arrayContaining(['clinical_trial']));
-  });
 });

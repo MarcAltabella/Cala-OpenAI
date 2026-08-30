@@ -6,23 +6,23 @@ Build a local-first healthcare market-intelligence dashboard whose primary artif
 
 The product thesis: a public announcement that moves a stock is rarely independent. It sits on a trail of patents, papers, collaborations, acquisitions, trial registrations, and disclosures. The dashboard reconstructs that trail and produces a **momentum report** for a company.
 
-### Practical case (demo narrative)
+### Product narrative
 
 Moderna recently announced an RNA-based cancer vaccine that stops melanoma from returning. The announcement made their stock price skyrocket. That event is not independent: there should be a history of patent filings, company reports, scientific papers, collaborations with research groups, and/or acquisitions of smaller companies. With that history we track and build a **momentum report** for a given company to infer whether they might be pushing out a new product so we can invest before the broader stock-market reaction.
 
-The seeded demo walks this Moderna / melanoma / mRNA-vaccine path end to end.
+The product tracks this Moderna / melanoma / mRNA-vaccine path end to end from persisted source data.
 
 ## Scope
 
 ### Graph entities (MVP)
 
-Seed and keep current:
+Track and keep current:
 
-| Node type | MVP seed / source | Notes |
+| Node type | MVP source | Notes |
 | --- | --- | --- |
 | Company | 20 important healthcare/biotech companies; Moderna first in the UI | Unlimited additional companies may be added |
 | Person | Extracted from papers, patents, trials, news, and filings | Employees, inventors, investigators, executives, academic authors |
-| Institution | University research departments, labs, hospitals extracted from affiliations | Seed well-known orgs that appear on papers/patents tied to the 20 companies |
+| Institution | University research departments, labs, hospitals extracted from affiliations | Resolve organizations that appear on papers/patents tied to tracked companies |
 | Paper | PubMed / PMC | First-class node, not only a company attachment |
 | Patent | PatentsView (USPTO) or equivalent patent API | Filing and grant dates matter for momentum |
 | ClinicalTrial | ClinicalTrials.gov | Sponsor, collaborators, investigators |
@@ -47,7 +47,7 @@ flowchart LR
 
 ### Sources
 
-- Seed each source with the prior 12 months of material (longer lookback allowed for patents and landmark papers when needed for the Moderna narrative).
+- Fetch each source's prior 12 months of material (longer lookback allowed for patents and landmark papers when needed for the Moderna narrative).
 - Daily runs fetch deltas only.
 - Live APIs and feeds:
   - ClinicalTrials.gov
@@ -85,7 +85,7 @@ Reports (/reports)
 
 - Primary navigation: Knowledge graph, Companies, Reports.
 - A persistent **Run now** action starts the same workflow as the daily scheduler.
-- MVP has one local demo operator: no authentication, organizations, or settings page.
+- MVP has one local operator: no authentication, organizations, or settings page.
 
 ## Architecture
 
@@ -155,13 +155,13 @@ The research agent uses OpenAI chat + tool calls. **Tool list is not frozen**; M
 
 ### Implemented on `mauro/dev2-agents-pipeline`
 
-Shipped and tested (mocks; no live keys required for `pnpm test`):
+Shipped and tested (external clients are dependency-injected for unit tests):
 
 - Source adapters: PubMed, ClinicalTrials.gov, IR/RSS news (`NEWS_FEED_URL`), Tavily web news (`TAVILY_API_KEY`, snippets only)
 - Research currently **runs every tool sequentially** in `runResearch` (not LLM tool-picking yet); a failed tool is recorded and does not abort siblings or Cala
 - LangGraph: parallel Cala healthcare + research → relation pack → Fastino healthcare gate (`isNew && isRelevant`) → optional Cala finance + Fastino finance
 - Fastino clients are OpenAI JSON-schema stand-ins today (`OpenAIFastinoClient`); swap to Hugging Face later without changing the graph
-- Worker `enqueueRun` + `scripts/run-moderna.ts` demo
+- Worker `enqueueRun` and the daily scheduler
 - Deferred: patents, FDA, DailyMed, SEC, people/institution linking, dashboard UI, real Fastino HF endpoints
 
 Initial research tools (each wraps an ingestion adapter, timeout, provider-scoped errors):
@@ -176,7 +176,7 @@ Initial research tools (each wraps an ingestion adapter, timeout, provider-scope
 - `search_web_news` (Tavily; title + snippet + URL; Fastino Healthcare does **not** call search)
 - `embed_and_upsert` (OpenAI embeddings into pgvector)
 
-The agent decides which tools to call for the company and `mode` (`seed` | `delta`). Failed tools are recorded on the run and do not abort the sibling Cala branch or other tools.
+The agent runs the configured tools for the company. Failed tools are recorded on the run and do not abort the sibling Cala branch or other tools.
 
 **2. Join, then relation extract**
 
@@ -266,7 +266,7 @@ GET    /institutions/:id
 GET    /companies/:id/documents
 GET    /companies/:id/developments
 GET    /companies/:id/agent-runs
-POST   /runs                     # { companyId, mode: seed | delta } — 202 queued
+POST   /runs                     # { companyId } — 202 queued
 GET    /runs/:id                 # status, phase, errors, counts (cala, docs, gate, finance)
 GET    /reports
 GET    /reports/:id
@@ -290,9 +290,9 @@ The React/Vite frontend uses Tailwind CSS and native React/HTML components for t
 ## Non-goals and upgrade triggers
 
 - No Redis or queue service initially. Add one when concurrent runs or retries outgrow the in-process worker.
-- No hosted deployment or managed database for the initial local demo.
+- No hosted deployment or managed database for the initial release.
 - No graph database as a source of truth. Neo4j becomes independently writable only if graph operations become the product's primary write path.
-- No user authentication or per-user graphs until the demo evolves beyond a single operator.
+- No user authentication or per-user graphs until the product evolves beyond a single operator.
 - No LinkedIn, full-web crawl, or paywalled news body extraction in MVP.
 - No general-purpose Q&A chat over the graph in MVP.
 - No local GPU serving of Fastino checkpoints in MVP; use Hugging Face Inference.

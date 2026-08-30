@@ -15,8 +15,8 @@ export type NeighborhoodInput = {
 
 export type Neighborhood = { nodes: GraphEntity[]; edges: GraphRelationship[] };
 
-// Read-model projector. Implemented by Neo4j (production) and an in-memory fake
-// (tests). Projection is idempotent: the same entity/relationship id merges once.
+// Read-model projector. Projection is idempotent: the same entity/relationship
+// id merges once.
 export interface GraphProjector {
   projectEntity(entity: GraphEntity): Promise<void>;
   projectRelationship(relationship: GraphRelationship): Promise<void>;

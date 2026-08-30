@@ -7,7 +7,7 @@ export type ChatInput = {
   temperature?: number;
 };
 
-// Minimal chat + embedding seams so agents can be tested without network access.
+// Minimal chat + embedding seams for dependency-injected tests.
 export interface ChatModel {
   complete(input: ChatInput): Promise<string>;
 }
@@ -60,7 +60,7 @@ export function createOpenAIClient(options: OpenAIClientOptions = {}): OpenAICli
   };
 }
 
-// Deterministic stand-ins for tests and offline runs.
+// Deterministic test seams.
 export class StubChatModel implements ChatModel {
   public calls: ChatInput[] = [];
   constructor(private readonly responder: (input: ChatInput) => string) {}
