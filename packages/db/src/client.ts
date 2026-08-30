@@ -3,7 +3,7 @@ import { migrate as runMigrations } from 'drizzle-orm/node-postgres/migrator';
 import { fileURLToPath } from 'node:url';
 import { Pool } from 'pg';
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL ?? 'postgresql://cala:cala@localhost:5432/cala',
+  connectionString: process.env.DATABASE_URL ?? 'postgresql://cala:cala@localhost:15432/cala',
 });
 export const db = drizzle(pool);
 export function databaseEnabled(): boolean {

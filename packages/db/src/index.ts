@@ -8,4 +8,3 @@ export { getGraphEntityDetail } from './repositories/graph-details.js';
 export { getCompanyOutput } from './repositories/output.js';
 export { assertReadOnlySelect, executeReadOnlySql } from './readonly-sql.js';
 export { databaseEnabled, db, pool, migrate } from './client.js';
-export { seedCompanies, WATCHLIST } from './seed.js';

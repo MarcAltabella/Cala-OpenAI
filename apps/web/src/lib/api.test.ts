@@ -12,7 +12,7 @@ describe('agent run API', () => {
     await expect(createAgentRun('moderna')).resolves.toEqual({ id: 'run-1', status: 'queued' });
     expect(fetchMock).toHaveBeenCalledWith('/runs', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ companyId: 'moderna', mode: 'delta' }),
+      body: JSON.stringify({ companyId: 'moderna' }),
     }));
   });
 

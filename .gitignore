@@ -5,3 +5,5 @@ dist/
 .codex/
 .entire/
 .cursor/
+api-*.log
+api-*.err.log

@@ -3,11 +3,11 @@ import neo4j, { type Driver } from 'neo4j-driver';
 import { FULL_GRAPH, MERGE_ENTITY, MERGE_RELATIONSHIP, NEIGHBORHOOD } from './queries.js';
 import type { GraphProjector, Neighborhood, NeighborhoodInput } from './types.js';
 
-function seedId(input: NeighborhoodInput): string | undefined {
+function focusId(input: NeighborhoodInput): string | undefined {
   return input.nodeId ?? input.companyId ?? input.personId ?? input.institutionId;
 }
 
-// In-memory fake driver for unit tests and offline demo runs. Idempotent on id.
+// In-memory test projector. Idempotent on id.
 export class InMemoryGraph implements GraphProjector {
   private readonly nodes = new Map<string, GraphEntity>();
   private readonly edges = new Map<string, GraphRelationship>();
@@ -19,7 +19,7 @@ export class InMemoryGraph implements GraphProjector {
     this.edges.set(relationship.id, { ...relationship });
   }
   async neighborhood(input: NeighborhoodInput): Promise<Neighborhood> {
-    const seed = seedId(input);
+    const seed = focusId(input);
     const limit = input.limit ?? 100;
     const seedNode = seed ? [...this.nodes.values()].find((n) => n.id === seed || n.sourceId === seed) : undefined;
     const seedKey = seedNode?.id ?? seed;
@@ -91,7 +91,7 @@ export class Neo4jGraph implements GraphProjector {
   }
   async neighborhood(input: NeighborhoodInput): Promise<Neighborhood> {
     const session = this.driver.session();
-    const seed = seedId(input) ?? null;
+    const seed = focusId(input) ?? null;
     try {
       const result = await session.run(seed ? NEIGHBORHOOD : FULL_GRAPH, {
         seedId: seed,
@@ -137,9 +137,10 @@ export class Neo4jGraph implements GraphProjector {
   }
 }
 
-// Build a projector from env; falls back to the in-memory fake when NEO4J_URI is unset.
+// Build the production projector from environment.
 export function createGraphFromEnv(): GraphProjector {
   const uri = process.env.NEO4J_URI;
-  if (!uri) return new InMemoryGraph();
+  if (!uri && process.env.VITEST) return new InMemoryGraph();
+  if (!uri) throw new Error('NEO4J_URI is required to create the Neo4j graph projector');
   return new Neo4jGraph({ uri, user: process.env.NEO4J_USER ?? 'neo4j', password: process.env.NEO4J_PASSWORD ?? 'neo4j' });
 }

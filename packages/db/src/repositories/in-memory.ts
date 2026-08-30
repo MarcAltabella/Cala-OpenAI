@@ -22,9 +22,9 @@ export type InMemoryStore = {
   financeImpacts: FinanceImpact[];
 };
 
-export function createInMemoryStore(seed?: { companies?: Company[] }): InMemoryStore {
+export function createInMemoryStore(initial?: { companies?: Company[] }): InMemoryStore {
   const companies = new Map<string, Company>();
-  for (const company of seed?.companies ?? []) companies.set(company.id, company);
+  for (const company of initial?.companies ?? []) companies.set(company.id, company);
   return {
     companies,
     runs: new Map(),
@@ -37,8 +37,7 @@ export function createInMemoryStore(seed?: { companies?: Company[] }): InMemoryS
   };
 }
 
-// Repositories backed by an in-memory store. Used by tests and the local demo
-// so the workflow can run without Postgres.
+// Repositories backed by an in-memory store for unit tests.
 export function createInMemoryRepositories(store: InMemoryStore = createInMemoryStore()): Repositories & { store: InMemoryStore } {
   return {
     store,
@@ -70,7 +69,7 @@ export function createInMemoryRepositories(store: InMemoryStore = createInMemory
         const run: AgentRun = {
           id: randomUUID(),
           companyId: input.companyId ?? null,
-          mode: input.mode,
+          mode: 'delta',
           status: 'queued',
           phase: 'queued',
           startedAt: null,

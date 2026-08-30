@@ -9,12 +9,12 @@ export function setEnqueueRun(fn: (runId: string) => void): void {
   enqueueRun = fn;
 }
 runsRouter.post('/', async (req, res) => {
-  const { companyId, mode } = req.body ?? {};
-  if (typeof companyId !== 'string' || (mode !== 'seed' && mode !== 'delta')) {
-    return res.status(400).json({ error: "companyId and mode ('seed' or 'delta') are required" });
+  const { companyId } = req.body ?? {};
+  if (typeof companyId !== 'string') {
+    return res.status(400).json({ error: 'companyId is required' });
   }
-  const run = await createRepositoriesFromEnv().runs.create({ companyId, mode });
-  console.log(`[run ${run.id}] queued company=${companyId} mode=${mode}`);
+  const run = await createRepositoriesFromEnv().runs.create({ companyId, mode: 'delta' });
+  console.log(`[run ${run.id}] queued company=${companyId} mode=delta`);
   enqueueRun(run.id);
   return res.status(202).json({ id: run.id, status: 'queued' });
 });

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOpenAIClient, generateSqlQuery, matchHardcodedSql } from '@cala/agents';
+import { createOpenAIClient, generateSqlQuery } from '@cala/agents';
 import { executeReadOnlySql, getGraphEntityDetail } from '@cala/db';
 import { createGraphFromEnv } from '@cala/graph';
 
@@ -9,8 +9,8 @@ const GRAPH_LIMIT_CAP = 100_000;
 export const knowledgeGraphRouter = Router();
 knowledgeGraphRouter.get('/', async (req, res) => {
   const list = (value: unknown) => typeof value === 'string' ? value.split(',').map((item) => item.trim()).filter(Boolean) : undefined;
-  const hasSeed = typeof req.query.companyId === 'string' || typeof req.query.nodeId === 'string' || typeof req.query.personId === 'string' || typeof req.query.institutionId === 'string';
-  const requestedLimit = Number(req.query.limit ?? (hasSeed ? 5_000 : GRAPH_LIMIT_CAP));
+  const hasFocus = typeof req.query.companyId === 'string' || typeof req.query.nodeId === 'string' || typeof req.query.personId === 'string' || typeof req.query.institutionId === 'string';
+  const requestedLimit = Number(req.query.limit ?? (hasFocus ? 5_000 : GRAPH_LIMIT_CAP));
   if (!Number.isFinite(requestedLimit) || requestedLimit < 1) return res.status(400).json({ error: 'limit must be a positive number' });
   try {
     return res.json(await graph.neighborhood({
@@ -41,10 +41,6 @@ knowledgeGraphRouter.post('/sql', async (req, res) => {
   const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
   if (!question) return res.status(400).json({ error: 'question is required' });
   try {
-    const hardcoded = matchHardcodedSql(question);
-    if (hardcoded) {
-      return res.json({ question, ...hardcoded });
-    }
     const generated = await generateSqlQuery(createOpenAIClient().chat, question);
     const result = await executeReadOnlySql(generated.sql);
     return res.json({ question, ...generated, ...result });
