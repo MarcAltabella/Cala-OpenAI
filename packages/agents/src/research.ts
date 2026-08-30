@@ -10,7 +10,11 @@ export type ResearchDeps = {
   repos: Repositories;
   graph: GraphProjector;
   embeddings?: EmbeddingModel;
+  runId?: string;
+  onEvent?: ResearchEventEmitter;
 };
+
+type ResearchEventEmitter = (event: { phase: 'fanout'; kind: 'tool_call' | 'tool_result' | 'error'; tool: string; summary: string; output?: Record<string, unknown> }) => Promise<void> | void;
 
 export type ResearchResult = {
   documentIds: string[];
@@ -54,7 +58,9 @@ export async function runResearch(
 
   for (const tool of deps.tools) {
     try {
+      await deps.onEvent?.({ phase: 'fanout', kind: 'tool_call', tool: tool.name, summary: `Running ${tool.name}` });
       const documents = await tool.run({ company, since });
+      await deps.onEvent?.({ phase: 'fanout', kind: 'tool_result', tool: tool.name, summary: `${tool.name} returned ${documents.length} document(s)`, output: { documents: documents.length } });
       const newTexts: string[] = [];
       for (const document of documents) {
         const upserted = await deps.repos.documents.upsert({
@@ -93,6 +99,7 @@ export async function runResearch(
       if (deps.embeddings && newTexts.length > 0) await deps.embeddings.embed(newTexts);
     } catch (error) {
       const provider = error instanceof SourceAdapterError ? error.provider : tool.name;
+      await deps.onEvent?.({ phase: 'fanout', kind: 'error', tool: provider, summary: error instanceof Error ? error.message : String(error) });
       result.errors.push(`${provider}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }

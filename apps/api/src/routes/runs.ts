@@ -14,6 +14,7 @@ runsRouter.post('/', async (req, res) => {
     return res.status(400).json({ error: "companyId and mode ('seed' or 'delta') are required" });
   }
   const run = await createRepositoriesFromEnv().runs.create({ companyId, mode });
+  console.log(`[run ${run.id}] queued company=${companyId} mode=${mode}`);
   enqueueRun(run.id);
   return res.status(202).json({ id: run.id, status: 'queued' });
 });

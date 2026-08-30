@@ -5,6 +5,7 @@ import { HttpCalaClient, type CalaClient } from './cala.js';
 import { OpenAIFastinoClient, type FastinoClient } from './fastino.js';
 import { createOpenAIClient, type OpenAIClient } from './models.js';
 import { defaultResearchTools, type ResearchTool } from './tools.js';
+import type { RunEvent } from '@cala/contracts';
 
 export type WorkflowDeps = {
   cala: CalaClient;
@@ -13,6 +14,7 @@ export type WorkflowDeps = {
   graph: GraphProjector;
   tools: ResearchTool[];
   openai?: OpenAIClient;
+  onEvent?: (event: Omit<RunEvent, 'id' | 'createdAt'>) => Promise<void> | void;
 };
 
 function createSeededStore(companies: Company[]) {

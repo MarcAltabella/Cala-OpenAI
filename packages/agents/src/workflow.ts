@@ -51,24 +51,29 @@ function buildGraph(deps: WorkflowDeps, company: Company) {
     deps.repos.runs.update(runId, { phase });
 
   const calaHealthcareNode = async (state: GraphState): Promise<Partial<GraphState>> => {
+    await deps.onEvent?.({ runId: state.runId, phase: 'fanout', kind: 'tool_call', tool: 'cala_healthcare', summary: 'Querying Cala healthcare intelligence' });
     const result = await deps.cala.queryHealthcare(company);
-    const snapshot = await deps.repos.calaSnapshots.insert({ companyId: company.id, kind: 'healthcare', input: result.input, entities: result.entities, results: result.results });
+    const snapshot = await deps.repos.calaSnapshots.insert({ runId: state.runId, companyId: company.id, kind: 'healthcare', input: result.input, entities: result.entities, results: result.results });
+    await deps.onEvent?.({ runId: state.runId, phase: 'fanout', kind: 'tool_result', tool: 'cala_healthcare', summary: 'Cala healthcare intelligence received', output: { entities: result.entities.length, results: result.results.length } });
     return { calaHealthcareSnapshotId: snapshot.id, calaHealthcareResult: result };
   };
 
-  const researchNode = async (): Promise<Partial<GraphState>> => {
-    const res = await runResearch({ company }, { tools: deps.tools, repos: deps.repos, graph: deps.graph, embeddings: deps.openai?.embeddings });
+  const researchNode = async (state: GraphState): Promise<Partial<GraphState>> => {
+    const res = await runResearch({ company }, { tools: deps.tools, repos: deps.repos, graph: deps.graph, embeddings: deps.openai?.embeddings, onEvent: (event) => deps.onEvent?.({ ...event, runId: state.runId }) });
     return { documentIds: res.documentIds, entityIds: res.entityIds, relationshipIds: res.relationshipIds, documentSummaries: res.documentSummaries, errors: res.errors };
   };
 
   const relationsNode = async (state: GraphState): Promise<Partial<GraphState>> => {
     await setPhase(state.runId, 'relations');
+    await deps.onEvent?.({ runId: state.runId, phase: 'relations', kind: 'tool_call', tool: 'relation_pack', summary: 'Building relation pack' });
     const pack = await buildRelationPack(company, { graph: deps.graph, chat: deps.openai?.chat });
+    await deps.onEvent?.({ runId: state.runId, phase: 'relations', kind: 'tool_result', tool: 'relation_pack', summary: 'Relation pack built', output: { nodes: pack.nodes.length, edges: pack.edges.length } });
     return { relationPack: pack };
   };
 
   const gateNode = async (state: GraphState): Promise<Partial<GraphState>> => {
     await setPhase(state.runId, 'healthcare_gate');
+    await deps.onEvent?.({ runId: state.runId, phase: 'healthcare_gate', kind: 'tool_call', tool: 'healthcare_gate', summary: 'Evaluating healthcare relevance' });
     const gate = await deps.fastino.healthcareGate({
       company,
       relationPack: state.relationPack ?? { companyId: company.id, brief: '', nodes: [], edges: [] },
@@ -76,19 +81,24 @@ function buildGraph(deps: WorkflowDeps, company: Company) {
       documentSummaries: state.documentSummaries,
     });
     const persisted = await deps.repos.healthcareGates.insert({ ...gate, runId: state.runId, companyId: company.id });
+    await deps.onEvent?.({ runId: state.runId, phase: 'healthcare_gate', kind: 'tool_result', tool: 'healthcare_gate', summary: 'Healthcare gate completed', output: { isNew: gate.isNew, isRelevant: gate.isRelevant, relevanceScore: gate.relevanceScore } });
     return { healthcareGate: persisted };
   };
 
   const financeNode = async (state: GraphState): Promise<Partial<GraphState>> => {
     await setPhase(state.runId, 'finance');
+    await deps.onEvent?.({ runId: state.runId, phase: 'finance', kind: 'tool_call', tool: 'cala_finance', summary: 'Querying Cala financial intelligence' });
     const finance = await deps.cala.queryFinance(company);
-    const snapshot = await deps.repos.calaSnapshots.insert({ companyId: company.id, kind: 'finance', input: finance.input, entities: finance.entities, results: finance.results });
+    const snapshot = await deps.repos.calaSnapshots.insert({ runId: state.runId, companyId: company.id, kind: 'finance', input: finance.input, entities: finance.entities, results: finance.results });
+    await deps.onEvent?.({ runId: state.runId, phase: 'finance', kind: 'tool_result', tool: 'cala_finance', summary: 'Cala financial intelligence received', output: { entities: finance.entities.length, results: finance.results.length } });
+    await deps.onEvent?.({ runId: state.runId, phase: 'finance', kind: 'tool_call', tool: 'finance_impact', summary: 'Assessing financial impact' });
     const impact = await deps.fastino.financeImpact({
       company,
       developmentSummary: state.healthcareGate?.developmentSummary ?? '',
       relationPack: state.relationPack ?? { companyId: company.id, brief: '', nodes: [], edges: [] },
       calaFinance: finance,
     });
+    await deps.onEvent?.({ runId: state.runId, phase: 'finance', kind: 'tool_result', tool: 'finance_impact', summary: 'Financial impact assessed', output: { evidence: impact.evidenceIds.length } });
     const persisted = await deps.repos.financeImpacts.insert({ ...impact, runId: state.runId, companyId: company.id });
     await deps.repos.runs.update(state.runId, { phase: 'completed', status: 'completed', finishedAt: new Date().toISOString() });
     return { calaFinanceSnapshotId: snapshot.id, financeImpactId: persisted.id ?? null };

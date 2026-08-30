@@ -4,6 +4,7 @@ import { listSourceDocuments } from '@cala/db/src/repositories/source-documents.
 import { listDevelopments } from '@cala/db/src/repositories/developments.js';
 import { databaseEnabled, listRuns, listRunsPersisted } from '@cala/db/src/repositories/runs.js';
 import { listPeopleForCompany } from '@cala/db/src/repositories/people.js';
+import { getCompanyOutput } from '@cala/db';
 
 export const companiesRouter = Router();
 companiesRouter.get('/', async (_req, res) => res.json(await createRepositoriesFromEnv().companies.list()));
@@ -22,6 +23,11 @@ companiesRouter.get('/:id', async (req, res) => {
 companiesRouter.get('/:id/agent-runs', async (req, res) =>
   res.json(databaseEnabled() ? await listRunsPersisted(req.params.id) : listRuns(req.params.id)),
 );
+companiesRouter.get('/:id/output', async (req, res) => {
+  if (!databaseEnabled()) return res.status(503).json({ error: 'database is required for reports' });
+  const output = await getCompanyOutput(req.params.id);
+  return output ? res.json(output) : res.status(404).json({ error: 'no agent run found' });
+});
 companiesRouter.get('/:id/timeline', (req, res) =>
   res.json(
     listSourceDocuments(req.params.id).map((document) => ({
