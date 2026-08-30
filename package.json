@@ -4,9 +4,7 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
-    "demo:moderna": "tsx scripts/run-moderna.ts",
-    "seed:watchlist": "tsx scripts/seed-watchlist.ts"
+    "test": "pnpm -r test"
   },
   "devDependencies": {
     "@cala/agents": "workspace:*",

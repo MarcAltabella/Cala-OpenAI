@@ -1,1 +1,10 @@
-{"extends":"../tsconfig.base.json","compilerOptions":{"declaration":false,"noEmit":true},"include":["**/*.ts"]}
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": false,
+    "noEmit": true
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}

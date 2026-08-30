@@ -2,10 +2,23 @@
   "studies": [
     {
       "protocolSection": {
-        "identificationModule": { "nctId": "NCT03897881", "briefTitle": "mRNA-4157 (V940) in Combination With Pembrolizumab in Melanoma" },
-        "statusModule": { "studyFirstPostDateStruct": { "date": "2019-04-01" } },
-        "descriptionModule": { "briefSummary": "A study of adjuvant mRNA-4157 plus pembrolizumab versus pembrolizumab in high-risk melanoma." },
-        "sponsorCollaboratorsModule": { "leadSponsor": { "name": "ModernaTX, Inc." } }
+        "identificationModule": {
+          "nctId": "NCT03897881",
+          "briefTitle": "mRNA-4157 (V940) in Combination With Pembrolizumab in Melanoma"
+        },
+        "statusModule": {
+          "studyFirstPostDateStruct": {
+            "date": "2019-04-01"
+          }
+        },
+        "descriptionModule": {
+          "briefSummary": "A study of adjuvant mRNA-4157 plus pembrolizumab versus pembrolizumab in high-risk melanoma."
+        },
+        "sponsorCollaboratorsModule": {
+          "leadSponsor": {
+            "name": "ModernaTX, Inc."
+          }
+        }
       }
     }
   ]

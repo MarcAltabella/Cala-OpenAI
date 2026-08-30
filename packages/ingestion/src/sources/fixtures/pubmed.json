@@ -1,6 +1,9 @@
 {
   "result": {
-    "uids": ["37000001", "37000002"],
+    "uids": [
+      "37000001",
+      "37000002"
+    ],
     "37000001": {
       "uid": "37000001",
       "title": "An mRNA-4157 neoantigen vaccine plus pembrolizumab in resected melanoma",
