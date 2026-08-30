@@ -218,6 +218,7 @@ export function createPostgresRepositories(): Repositories {
           .insert(calaSnapshots)
           .values({
             companyId: asUuid(input.companyId),
+            runId: asUuid(input.runId),
             kind: input.kind,
             input: input.input,
             entities: input.entities,
@@ -227,6 +228,7 @@ export function createPostgresRepositories(): Repositories {
         const created: CalaSnapshot = {
           id: row.id,
           companyId: row.companyId,
+          runId: row.runId,
           kind: row.kind as CalaSnapshot['kind'],
           input: row.input,
           entities: row.entities as CalaSnapshot['entities'],
