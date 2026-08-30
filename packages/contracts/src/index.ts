@@ -23,6 +23,7 @@ export type CalaSnapshotKind = 'healthcare' | 'finance';
 export type CalaSnapshot = {
   id: string;
   companyId: string | null;
+  runId?: string | null;
   kind: CalaSnapshotKind;
   input: string;
   entities: CalaEntity[];

@@ -5,6 +5,7 @@ export type { InMemoryStore } from './repositories/in-memory.js';
 export { createPostgresRepositories } from './repositories/postgres.js';
 export { createRepositoriesFromEnv, resetRepositoriesForTests } from './repositories/from-env.js';
 export { getGraphEntityDetail } from './repositories/graph-details.js';
+export { getCompanyOutput } from './repositories/output.js';
 export { assertReadOnlySelect, executeReadOnlySql } from './readonly-sql.js';
 export { databaseEnabled, db, pool, migrate } from './client.js';
 export { seedCompanies, WATCHLIST } from './seed.js';
