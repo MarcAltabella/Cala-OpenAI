@@ -15,6 +15,7 @@ export type GraphEntityDetail = {
   relationships: Array<GraphRelationship & { evidenceUrl: string | null; confidence: number }>;
   evidence: GraphDocument[];
 };
+export type CompanyOutput = { run: Run; healthcareGate: { isNew: boolean; isRelevant: boolean; relevanceScore: number | string; rationale: string; developmentSummary: string } | null; financeImpact: { developmentSummary: string; potentialProductOrCatalyst: string; expectedImpact: { direction: string; magnitude: string; horizon: string; confidence: number | string }; rationale: string; evidenceIds: string[] } | null; snapshots: Array<{ id: string; kind: 'healthcare' | 'finance'; input: string; entities: unknown[]; results: Record<string, unknown>[]; createdAt: string }>; references: Array<{ id: string; provider: string; providerId: string; url: string | null; publishedAt: string | null; excerpt: string }> };
 export type ServiceHealth = { status: 'ok' | 'degraded'; postgres: 'connected' | 'unavailable'; neo4j: 'connected' | 'unavailable' };
 
 const API_BASE_URL = (((import.meta as ImportMeta & { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL) ?? '').replace(/\/$/, '');
@@ -37,6 +38,7 @@ export async function listCompanyRuns(companyId: string) { return json<Run[]>(`/
 export async function createAgentRun(companyId: string) { return requestJson<QueuedRun>('/runs', { method: 'POST', body: JSON.stringify({ companyId }) }); }
 export async function getRun(runId: string) { return requestJson<Run>(`/runs/${encodeURIComponent(runId)}`); }
 export async function getRunEvents(runId: string) { return requestJson<RunEvent[]>(`/runs/${encodeURIComponent(runId)}/events`); }
+export async function getCompanyOutput(companyId: string) { return json<CompanyOutput>(`/companies/${encodeURIComponent(companyId)}/output`); }
 
 export async function getKnowledgeGraph(filters: {
   companyId?: string;

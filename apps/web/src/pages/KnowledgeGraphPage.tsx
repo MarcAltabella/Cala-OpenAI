@@ -4,7 +4,6 @@ import {
   BackgroundVariant,
   Controls,
   Handle,
-  MiniMap,
   Position,
   ReactFlow,
   useEdgesState,
@@ -12,18 +11,16 @@ import {
   type Edge,
   type NodeProps,
 } from '@xyflow/react';
-import { ArrowUpRight, CalendarDays, Database, ExternalLink, Loader2, Network, Tag, X } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, ExternalLink, Loader2, Network, Tag, X } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import {
   getGraphEntityDetail,
   getKnowledgeGraph,
-  getServiceHealth,
   listCompanies,
   askGraphSql,
   type Company,
   type GraphAskFilter,
   type GraphEntityDetail,
-  type ServiceHealth,
 } from '../lib/api';
 import {
   ENTITY_STYLES,
@@ -31,7 +28,6 @@ import {
   layoutAllCompanies,
   layoutModernaScene,
   layoutNeighborhood,
-  mergeExpansion,
   type KnowledgeNode,
 } from '../lib/graph';
 import { PromptBar } from '../components/PromptBar';
@@ -62,15 +58,13 @@ const ALL_COMPANIES = 'all';
 
 export function KnowledgeGraphPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [companyId, setCompanyId] = useState('');
+  const [companyId, setCompanyId] = useState(ALL_COMPANIES);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<GraphEntityDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [health, setHealth] = useState<ServiceHealth | null>(null);
   const [activeTypes, setActiveTypes] = useState(() => new Set(entityTypes));
   const [activeRelationships, setActiveRelationships] = useState(() => new Set(relationshipTypes));
   const [loading, setLoading] = useState(true);
-  const [expanding, setExpanding] = useState(false);
   const [error, setError] = useState('');
   const [sqlBusy, setSqlBusy] = useState(false);
   const [sqlError, setSqlError] = useState('');
@@ -80,11 +74,9 @@ export function KnowledgeGraphPage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
-    void Promise.all([listCompanies(), getServiceHealth().catch(() => null)]).then(([items, serviceHealth]) => {
+    void listCompanies().then((items) => {
       setCompanies(items);
-      setHealth(serviceHealth);
-      const moderna = items.find((company) => company.ticker === 'MRNA');
-      setCompanyId((current) => current || moderna?.id || items[0]?.id || ALL_COMPANIES);
+      setCompanyId((current) => current || ALL_COMPANIES);
       setReady(true);
     });
   }, []);
@@ -180,24 +172,6 @@ export function KnowledgeGraphPage() {
       return next;
     });
   }, []);
-  const expandSelected = useCallback(async () => {
-    if (!selectedId || nodes.find((node) => node.id === selectedId)?.data.expanded) return;
-    setExpanding(true);
-    try {
-      const data = await getKnowledgeGraph({
-        nodeId: selectedId,
-        entityTypes: [...activeTypes],
-        relationshipTypes: [...activeRelationships],
-        limit: 10_000,
-      });
-      const merged = mergeExpansion(nodes, edges, data, selectedId);
-      setNodes(merged.nodes);
-      setEdges(merged.edges);
-    } finally {
-      setExpanding(false);
-    }
-  }, [activeRelationships, activeTypes, edges, nodes, selectedId, setEdges, setNodes]);
-
   const applyGraphFilter = useCallback((filter: GraphAskFilter | undefined, companyList: Company[]) => {
     if (!filter) return;
     if (filter.allCompanies) {
@@ -248,20 +222,14 @@ export function KnowledgeGraphPage() {
   return (
     <div className="graph-page">
       <div className={`graph-canvas-shell ${selectedId ? 'is-drawer-open' : ''}`}>
-        <section className="knowledge-hub" aria-label="Company hub">
+        <section className="knowledge-hub" aria-label="Companies">
           <label>
-            <span>Company hub</span>
+            <span>Companies</span>
             <select value={companyId} onChange={(event) => setCompanyId(event.target.value)}>
               <option value={ALL_COMPANIES}>All companies</option>
               {companies.map((company) => <option key={company.id} value={company.id}>{company.name} · {company.ticker ?? '—'}</option>)}
             </select>
           </label>
-          <div className="graph-health" title={`PostgreSQL: ${health?.postgres ?? 'checking'} · Neo4j: ${health?.neo4j ?? 'checking'}`}>
-            <i className={health?.status === 'ok' ? 'is-connected' : ''} />
-            <Database size={13} /> PostgreSQL
-            <i className={health?.neo4j === 'connected' ? 'is-connected' : ''} />
-            <Network size={13} /> Neo4j
-          </div>
         </section>
 
         <section className="knowledge-filters" aria-label="Graph filters">
@@ -310,13 +278,6 @@ export function KnowledgeGraphPage() {
         >
           <Background variant={BackgroundVariant.Dots} gap={28} size={1} color="#d8dfdb" />
           <Controls position="bottom-left" showInteractive={false} />
-          <MiniMap
-            position="bottom-right"
-            pannable
-            zoomable
-            nodeColor={(node) => (node.data as KnowledgeNode['data'])?.color ?? '#81958D'}
-            maskColor="rgb(248 249 247 / 72%)"
-          />
         </ReactFlow>
 
         {loading && <div className="graph-state"><Loader2 className="graph-spin" size={20} />Loading {companyId === ALL_COMPANIES ? 'all companies' : selectedCompany?.name ?? 'knowledge graph'}…</div>}
@@ -343,9 +304,6 @@ export function KnowledgeGraphPage() {
                     {document?.excerpt && <div className="graph-evidence-copy"><small>Main information</small><p>{document.excerpt}</p></div>}
                     {document?.url && <a className="graph-company-url" href={document.url} target="_blank" rel="noreferrer">Open source evidence <ExternalLink size={12} /></a>}
                     <div className="graph-drawer-field"><Network size={14} /><div><small>Relations</small><strong>{detail.relationships.length} connected relationship{detail.relationships.length === 1 ? '' : 's'}</strong></div></div>
-                    <button className="graph-drawer-action" onClick={() => void expandSelected()} disabled={expanding || selectedNode?.data.expanded}>
-                      {expanding ? 'Expanding…' : selectedNode?.data.expanded ? 'Neighbors expanded' : 'Expand neighbors'} <ArrowUpRight size={14} />
-                    </button>
                     {detail.company && <a className="graph-profile-link" href={`/companies/${detail.company.id}`}>Open company profile <ArrowUpRight size={14} /></a>}
                   </>
                 )}
