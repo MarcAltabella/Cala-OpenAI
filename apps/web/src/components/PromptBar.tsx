@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import {
   AtSign,
+  ArrowUp,
   ChevronDown,
   FileText,
   Globe2,
-  Image,
   LoaderCircle,
   Mic,
-  Paperclip,
   Plus,
-  Send,
   Sparkles,
   X,
   Zap,
@@ -26,7 +24,6 @@ type PromptBarProps = {
 };
 
 const SOURCES = [
-  { label: 'Upload files', hint: 'PDF, CSV, DOCX', icon: FileText },
   { label: 'Web search', hint: 'Latest healthcare signals', icon: Globe2 },
   { label: 'Knowledge graph', hint: 'Companies and relationships', icon: Sparkles },
 ];
@@ -108,13 +105,11 @@ export function PromptBar({ placeholder = 'Ask predict anything…', onSend, var
       <div className="promptbar-toolbar">
         <div className="promptbar-toolbar-left">
           <button aria-label="Add source" className="promptbar-icon" onClick={() => setMenu(menu === 'source' ? null : 'source')}><Plus size={16} /></button>
-          <button aria-label="Attach file" className="promptbar-icon" onClick={() => setAttachments((current) => [...current, 'Company evidence.pdf'])}><Paperclip size={15} /></button>
           <button className="promptbar-model" onClick={() => setMenu(menu === 'model' ? null : 'model')}>{model}<ChevronDown size={13} /></button>
         </div>
         <div className="promptbar-toolbar-right">
           <button aria-label="Dictate" className={`promptbar-icon ${listening ? 'is-listening' : ''}`} onClick={() => { setListening((current) => !current); setTimeout(() => setListening(false), 1600); }}><Mic size={15} /></button>
-          <button aria-label="Add image" className="promptbar-icon"><Image size={15} /></button>
-          <button aria-label="Send prompt" className="promptbar-send" disabled={!value.trim() || busy} onClick={send}>{listening || busy ? <LoaderCircle className="promptbar-spin" size={15} /> : <Send size={15} />}</button>
+          <button aria-label="Send prompt" className="promptbar-send" disabled={!value.trim() || busy} onClick={send}>{listening || busy ? <LoaderCircle className="promptbar-spin" size={15} /> : <ArrowUp size={15} />}</button>
         </div>
       </div>
       <div className="promptbar-hint"><AtSign size={11} /> {hint ?? <>sources <span>/</span> commands</>} <kbd>Enter</kbd> to run</div>

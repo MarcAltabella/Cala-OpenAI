@@ -15,13 +15,14 @@ import { useEffect, useState, type ReactNode } from "react";
 
 const TICKS = [600, 900, 2400, 1400, 2400, 600];
 
-function useTick(intervals: number[]) {
+function useTick(intervals: number[], enabled = true) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
+    if (!enabled) return;
     if (tick >= intervals.length - 1) return;
     const t = setTimeout(() => setTick((x) => x + 1), intervals[tick]);
     return () => clearTimeout(t);
-  }, [tick, intervals]);
+  }, [enabled, tick, intervals]);
   return tick;
 }
 
@@ -83,7 +84,7 @@ export type TaskRow = {
   key: string;
   label: string;
   amount: string;
-  status: "done" | "running" | "sequence";
+  status: "pending" | "done" | "running" | "failed" | "sequence";
   step?: number;
   details: TaskDetail[];
 };
@@ -139,19 +140,23 @@ export default function TaskRows({
   labels,
   className,
   onToggleRow,
+  animate = true,
 }: {
   variant?: string;
   rows?: TaskRow[];
   labels?: Partial<TaskRowsLabels>;
   className?: string;
   onToggleRow?: (key: string, open: boolean) => void;
+  animate?: boolean;
 }) {
-  const tick = useTick(TICKS);
+  const tick = useTick(TICKS, animate);
   const [manualOpen, setManualOpen] = useState<Record<string, boolean>>({});
   const row2: "pending" | "failed" | "done" = tick < 3 ? "pending" : tick === 3 ? "failed" : "done";
   const copy = { ...DEFAULT_LABELS, ...labels };
 
   const badgeFor = (row: TaskRow) => {
+    if (row.status === "pending") return <SpinnerRing>{row.step}</SpinnerRing>;
+    if (row.status === "failed") return <Badge tone="red">{XIcon}</Badge>;
     if (row.status === "done") return <Badge tone="green">{CheckIcon}</Badge>;
     if (row.status === "running") return <SpinnerRing active>{row.step}</SpinnerRing>;
     return row2 === "pending" ? (
@@ -164,6 +169,8 @@ export default function TaskRows({
   };
 
   const pillFor = (row: TaskRow) => {
+    if (row.status === "pending") return null;
+    if (row.status === "failed") return <span className="inline-flex h-5.5 items-center rounded-full bg-red-tint px-2 text-[11.5px] font-medium text-red">Failed</span>;
     if (row.status === "done")
       return (
         <span className="inline-flex h-5.5 items-center rounded-full bg-green-tint px-2 text-[11.5px] font-medium text-green">
@@ -199,7 +206,7 @@ export default function TaskRows({
             }`}
             style={{
               borderRadius: list ? 0 : open ? 14 : 22,
-              animation: `fade-up 450ms cubic-bezier(0.23,1,0.32,1) ${i * 80}ms both`,
+              animation: animate ? `fade-up 450ms cubic-bezier(0.23,1,0.32,1) ${i * 80}ms both` : undefined,
             }}
           >
             <button
