@@ -9,11 +9,11 @@ export type Development = { id: string; companyId: string; sourceDocumentId: str
 export type FinanceAnalysis = { id: string; developmentId: string; marketSnapshot: unknown; impact: string; confidence: number; rationale: string; createdAt: string };
 export type AgentRunPhase = 'queued' | 'fanout' | 'relations' | 'healthcare_gate' | 'stopped' | 'finance' | 'completed' | 'failed';
 export type AgentPhase = AgentRunPhase;
-export type AgentRun = { id: string; companyId: string | null; mode: 'seed' | 'delta'; status: 'queued' | 'running' | 'completed' | 'failed'; phase: AgentRunPhase; startedAt: string | null; finishedAt: string | null; error: string | null; counts: Record<string, number> };
+export type AgentRun = { id: string; companyId: string | null; mode: 'delta'; status: 'queued' | 'running' | 'completed' | 'failed'; phase: AgentRunPhase; startedAt: string | null; finishedAt: string | null; error: string | null; counts: Record<string, number> };
 export type DailyReport = { id: string; reportDate: string; summary: string; createdAt: string };
 export type GraphEntity = { id: string; entityType: string; label: string; sourceId: string | null };
 export type GraphRelationship = { id: string; fromEntityId: string; toEntityId: string; relationshipType: string; evidenceDocumentId: string | null };
-export type RunInput = { companyId?: string; mode: 'seed' | 'delta' };
+export type RunInput = { companyId?: string; mode?: 'delta' };
 export type MomentumReport = { companyId: string; thesis: string; events: Array<{ entityId: string; summary: string; occurredAt: string }>; generatedAt: string };
 export type RunEvent = { id: string; runId: string; phase: AgentRunPhase; kind: 'phase' | 'tool_call' | 'tool_result' | 'error'; tool: string | null; input?: Record<string, unknown>; output?: Record<string, unknown>; summary: string | null; createdAt: string };
 

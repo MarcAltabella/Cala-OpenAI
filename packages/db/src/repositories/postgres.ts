@@ -30,7 +30,7 @@ function mapRun(row: typeof agentRuns.$inferSelect): AgentRun {
   return {
     id: row.id,
     companyId: row.companyId,
-    mode: row.mode === 'seed' ? 'seed' : 'delta',
+    mode: 'delta',
     status: (row.status as AgentRun['status']) ?? 'queued',
     phase: (row.phase as AgentRunPhase) ?? 'queued',
     startedAt: iso(row.startedAt),

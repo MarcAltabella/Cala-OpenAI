@@ -7,4 +7,3 @@ export { createRepositoriesFromEnv, resetRepositoriesForTests } from './reposito
 export { getGraphEntityDetail } from './repositories/graph-details.js';
 export { assertReadOnlySelect, executeReadOnlySql } from './readonly-sql.js';
 export { databaseEnabled, db, pool, migrate } from './client.js';
-export { seedCompanies, WATCHLIST } from './seed.js';

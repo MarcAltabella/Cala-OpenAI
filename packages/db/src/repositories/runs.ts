@@ -8,7 +8,7 @@ export function createRun(input: RunInput): AgentRun {
   const run: AgentRun = {
     id: randomUUID(),
     companyId: input.companyId ?? null,
-    mode: input.mode,
+    mode: 'delta',
     status: 'queued',
     phase: 'queued',
     startedAt: null,
@@ -50,7 +50,7 @@ function fromRow(row: typeof agentRuns.$inferSelect): AgentRun {
   return {
     id: row.id,
     companyId: row.companyId,
-    mode: row.mode === 'seed' ? 'seed' : 'delta',
+    mode: 'delta',
     status: row.status as AgentRun['status'],
     phase: row.phase as AgentRunPhase,
     startedAt: row.startedAt?.toISOString() ?? null,
@@ -63,7 +63,7 @@ function fromRow(row: typeof agentRuns.$inferSelect): AgentRun {
 export async function createRunPersisted(input: RunInput): Promise<AgentRun> {
   const [row] = await db
     .insert(agentRuns)
-    .values({ companyId: input.companyId ?? null, mode: input.mode, status: 'queued', phase: 'queued', counts: {} })
+    .values({ companyId: input.companyId ?? null, mode: 'delta', status: 'queued', phase: 'queued', counts: {} })
     .returning();
   return fromRow(row);
 }
