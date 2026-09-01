@@ -1,6 +1,6 @@
 # Cala x OpenAI
 
-We built Cala around the Moderna melanoma-vaccine story: the market-moving announcement was not an isolated event, but the visible end of a longer, evidence-backed sequence. The goal is to surface those connections earlier—before the story becomes obvious in the news.
+We built Predict around the Moderna melanoma-vaccine story: the market-moving announcement was not an isolated event, but the visible end of a longer, evidence-backed sequence. The goal is to surface those connections earlier—before the story becomes obvious in the news.
 
 ## What is in the repository
 
@@ -72,7 +72,7 @@ TAVILY_API_KEY=
 NEWS_FEED_URL=
 ```
 
-`OPENAI_CHAT_MODEL` defaults to `gpt-5.6-luna`; embeddings default to `text-embedding-3-small`. A missing Tavily key or RSS feed simply leaves that optional source empty. Never commit `.env` or provider credentials.
+`OPENAI_CHAT_MODEL` defaults to `gpt-5.6-luna`; embeddings default to `text-embedding-3-small`. A missing Tavily key or RSS feed simply leaves that optional source empty.
 
 ## Everyday commands
 
@@ -99,4 +99,3 @@ pnpm test         # Run workspace tests
 
 The graph SQL endpoint generates and executes read-only queries; it never accepts Cypher from a client.
 
-For the complete product scope, data model, and workflow contract, see [planning.md](planning.md).
