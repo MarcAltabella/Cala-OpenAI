@@ -1,8 +1,6 @@
-# Cala — Healthcare Market Intelligence
+# Cala x OpenAI
 
-Cala is a local-first research dashboard for finding healthcare catalysts before they become market-moving news. It connects companies to evidence such as publications, clinical trials, news, people, institutions, and relationships, then uses that trail to produce a momentum-oriented view of a company.
-
-The MVP follows the Moderna melanoma-vaccine narrative: a public announcement is treated as the visible end of a longer, evidence-backed sequence rather than an isolated event.
+We built Cala around the Moderna melanoma-vaccine story: the market-moving announcement was not an isolated event, but the visible end of a longer, evidence-backed sequence. The goal is to surface those connections earlier—before the story becomes obvious in the news.
 
 ## What is in the repository
 
@@ -100,29 +98,5 @@ pnpm test         # Run workspace tests
 | Reports | `GET /reports/momentum/:companyId` |
 
 The graph SQL endpoint generates and executes read-only queries; it never accepts Cypher from a client.
-
-## Repository layout
-
-```text
-apps/
-  api/       Express routes and server entry point
-  web/       React dashboard and React Flow graph
-  worker/    Run queue bridge and daily scheduler
-packages/
-  agents/    LangGraph workflow, model clients, research and relations
-  contracts/ Shared domain types
-  db/        Drizzle schema, migrations, and repositories
-  graph/     Neo4j projection and graph queries
-  ingestion/ Source adapters and normalization
-infra/       Local Docker Compose services
-scripts/     Development-process orchestrator
-```
-
-## Development notes
-
-- PostgreSQL is the source of truth. Neo4j is written by the worker after PostgreSQL commits and can be rebuilt.
-- Source ingestion is designed to be idempotent through provider identifiers and content hashes.
-- The MVP is a single local-operator workflow; it does not implement authentication or multi-tenant access.
-- The app is research tooling, not investment, medical, or regulatory advice. Validate source evidence and professional requirements before acting on any output.
 
 For the complete product scope, data model, and workflow contract, see [planning.md](planning.md).
