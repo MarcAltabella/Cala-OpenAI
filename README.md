@@ -2,6 +2,12 @@
 
 We built Predict around the Moderna melanoma-vaccine story: the market-moving announcement was not an isolated event, but the visible end of a longer, evidence-backed sequence. The goal is to surface those connections earlier—before the story becomes obvious in the news.
 
+<p align="center">
+  <img src="docs/screenshots/Agent-workflow-moderna.png" alt="Predict agent workflow" width="32%" />
+  <img src="docs/screenshots/knowledge-graph-moderna.png" alt="Predict knowledge graph overview" width="32%" />
+  <img src="docs/screenshots/KG-moderna.png" alt="Predict knowledge graph detail" width="32%" />
+</p>
+
 ## What is in the repository
 
 - A React 19 + Vite dashboard for company records, company reports, and an interactive knowledge graph.
