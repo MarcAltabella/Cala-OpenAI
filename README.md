@@ -67,14 +67,13 @@ The dashboard is served at `/`; the interactive graph is at `/knowledge-graph`, 
 ```dotenv
 OPENAI_API_KEY=
 CALA_API_KEY=
-HF_TOKEN=
 TAVILY_API_KEY=
 NEWS_FEED_URL=
 ```
 
 `OPENAI_CHAT_MODEL` defaults to `gpt-5.6-luna`; embeddings default to `text-embedding-3-small`. A missing Tavily key or RSS feed simply leaves that optional source empty.
 
-## Everyday commands
+## Useful commands
 
 ```powershell
 pnpm dev          # API, worker, and web app
