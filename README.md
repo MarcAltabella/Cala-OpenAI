@@ -4,7 +4,6 @@ We built Predict around the Moderna melanoma-vaccine story: the market-moving an
 
 <p align="center">
   <img src="docs/screenshots/Agent-workflow-moderna.png" alt="Predict agent workflow" width="32%" />
-  <img src="docs/screenshots/knowledge-graph-moderna.png" alt="Predict knowledge graph overview" width="32%" />
   <img src="docs/screenshots/KG-moderna.png" alt="Predict knowledge graph detail" width="32%" />
 </p>
 
